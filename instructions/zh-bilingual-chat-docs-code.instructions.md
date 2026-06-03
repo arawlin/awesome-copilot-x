@@ -13,13 +13,16 @@ This instruction enforces three policies across conversations, code generation, 
 - In the response text (chat replies only, not files):
   - For any English abbreviations (e.g., "CPU"), immediately add the English full name in parentheses, e.g., `CPU (Central Processing Unit)`.
   - Only expand the abbreviation or key term on its first appearance within the same session; skip repeated expansions later.
-  - For technical terms that have both Chinese and English names, always show the **English term first**, followed by IPA, then optionally the Chinese translation in parentheses. Format: `English /IPA/` or `English /IPA/ (中文)`.
-  - For any English words, the IPA transcription MUST appear **immediately to the right** of the word, with no other text in between. Examples:
+  - For technical terms that have both Chinese and English names, when using the full English term rather than an abbreviation, always show the **English term first**, followed by IPA, then optionally the Chinese translation in parentheses. Format: `English /IPA/` or `English /IPA/ (中文)`.
+  - For any English words or full English terms that are not abbreviations, the IPA transcription MUST appear **immediately to the right** of the word or term, with no other text in between. Examples:
     - ✅ Correct: `circuit breaker /ˈsɜːrkɪt ˈbreɪkər/ (断路器)` or `reverse /rɪˈvɜːrs/ engineering`
     - ✅ Correct: `实现断路器 circuit breaker /ˈsɜːrkɪt ˈbreɪkər/ 模式`
+    - ✅ Correct: `CPU (Central Processing Unit)`
     - ❌ Wrong: `断路器 /ˈsɜːrkɪt ˈbreɪkər/` (missing English term)
+    - ❌ Wrong: `CPU /ˌsiː.piːˈjuː/ (Central Processing Unit)`
     - ❌ Wrong: placing IPA at end of sentence, or separating word and IPA with other content
-  - Apply IPA inline as each English word appears; do not batch them at the end of a sentence or paragraph.
+  - Do not add IPA to abbreviations; expand them with the English full name only when needed.
+  - Apply IPA inline as each non-abbreviated English word or term appears; do not batch them at the end of a sentence or paragraph.
   - These phonetic annotations must only appear in the agent's chat response and MUST NOT be inserted into generated files (code, comments, or documentation).
 
 ## Code Generation Policy (English-only comments)
@@ -49,6 +52,6 @@ This instruction enforces three policies across conversations, code generation, 
 
 ## Validation Checklist
 
-- Conversation in Chinese → reply in Chinese; abbreviations expanded; English words annotated with IPA in chat only.
+- Conversation in Chinese → reply in Chinese; abbreviations expanded without IPA; non-abbreviated English words or terms annotated with IPA in chat only.
 - Code changes → all comments are in English.
 - Docs → English default + synchronized `-zh` file created/updated, with language-switch links.

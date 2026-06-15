@@ -22,14 +22,20 @@ This instruction enforces three policies across conversations, code generation, 
 ### IPA placement (end-of-response reference section)
 
 - Do **NOT** place IPA transcriptions inline within the response body.
-- Collect all IPA transcriptions and place them at the very end of the response in a `参考` (Reference) section, formatted as a bullet list:
+- Collect all annotated terms and place them at the very end of the response in a `参考` (Reference) section.
+- For each term, include: English term → IPA → Chinese meaning → etymology / word roots (brief only).
+- Format as a bullet list with sub-bullets for etymology:
 
   ```
   ---
   **参考（发音）**：
-  - circuit breaker /ˈsɜːrkɪt ˈbreɪkər/
-  - reverse /rɪˈvɜːrs/
+  - circuit breaker /ˈsɜːrkɪt ˈbreɪkər/ 断路器
+    - circuit：拉丁语 circuitus（环绕一圈）；breaker：古英语 brecan（打破）
+  - algorithm /ˈælɡərɪðəm/ 算法
+    - 词根：阿拉伯语 al-Khwarizmi（数学家花拉子米之名）
   ```
+
+- Keep etymology concise — one line per term, only list key roots. Do NOT include historical evolution narratives.
 
 ### IPA scope (low-frequency words only)
 
@@ -71,6 +77,6 @@ This instruction enforces three policies across conversations, code generation, 
 
 - Conversation in Chinese → reply in Chinese.
 - Technical terms → Chinese-first, English equivalent in parentheses on first use; abbreviations expanded to full form.
-- IPA → only for low-frequency words; collected at end of response in a `参考（发音）` section; never inline.
+- IPA → only for low-frequency words; collected at end of response in a `参考（发音）` section with meaning + etymology; never inline.
 - Code changes → all comments are in English.
 - Docs → English default + synchronized `-zh` file created/updated, with language-switch links.

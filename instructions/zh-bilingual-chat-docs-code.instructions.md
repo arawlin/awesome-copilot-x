@@ -11,19 +11,36 @@ This instruction enforces three policies across conversations, code generation, 
 
 - When the user converses in Chinese, respond in Chinese.
 - In the response text (chat replies only, not files):
-  - For any English abbreviations (e.g., "CPU"), immediately add the English full name in parentheses, e.g., `CPU (Central Processing Unit)`.
-  - Only expand the abbreviation or key term on its first appearance within the same session; skip repeated expansions later.
-  - For technical terms that have both Chinese and English names, when using the full English term rather than an abbreviation, always show the **English term first**, followed by IPA, then optionally the Chinese translation in parentheses. Format: `English /IPA/` or `English /IPA/ (中文)`.
-  - For any English words or full English terms that are not abbreviations, the IPA transcription MUST appear **immediately to the right** of the word or term, with no other text in between. Examples:
-    - ✅ Correct: `circuit breaker /ˈsɜːrkɪt ˈbreɪkər/ (断路器)` or `reverse /rɪˈvɜːrs/ engineering`
-    - ✅ Correct: `实现断路器 circuit breaker /ˈsɜːrkɪt ˈbreɪkər/ 模式`
-    - ✅ Correct: `CPU (Central Processing Unit)`
-    - ❌ Wrong: `断路器 /ˈsɜːrkɪt ˈbreɪkər/` (missing English term)
-    - ❌ Wrong: `CPU /ˌsiː.piːˈjuː/ (Central Processing Unit)`
-    - ❌ Wrong: placing IPA at end of sentence, or separating word and IPA with other content
-  - Do not add IPA to abbreviations; expand them with the English full name only when needed.
-  - Apply IPA inline as each non-abbreviated English word or term appears; do not batch them at the end of a sentence or paragraph.
-  - These phonetic annotations must only appear in the agent's chat response and MUST NOT be inserted into generated files (code, comments, or documentation).
+
+### Term display (Chinese-first with English reference)
+
+- Use Chinese as the primary reading language. When a technical term first appears, show the English equivalent in parentheses after the Chinese term.
+  - Full English terms: `断路器（circuit breaker）`
+  - Abbreviations: expand to the full English form on first use, e.g., `CPU（Central Processing Unit）`
+- Only annotate a term with its English equivalent on its first appearance within the same session; skip repeated annotations later.
+
+### IPA placement (end-of-response reference section)
+
+- Do **NOT** place IPA transcriptions inline within the response body.
+- Collect all IPA transcriptions and place them at the very end of the response in a `参考` (Reference) section, formatted as a bullet list:
+
+  ```
+  ---
+  **参考（发音）**：
+  - circuit breaker /ˈsɜːrkɪt ˈbreɪkər/
+  - reverse /rɪˈvɜːrs/
+  ```
+
+### IPA scope (low-frequency words only)
+
+- Only provide IPA for low-frequency or uncommon English words. **Skip IPA** for:
+  - Common tech vocabulary (e.g., server, data, code, file, API, URL, HTTP, JSON, HTML, CSS, DNS, SSH)
+  - Basic English words (e.g., use, make, get, set, run, call, check, build)
+  - Abbreviations (only expand them — do not add IPA)
+
+### Scope restriction
+
+- These annotations (English equivalents and IPA) must only appear in the agent's chat response and MUST NOT be inserted into generated files (code, comments, or documentation).
 
 ## Code Generation Policy (English-only comments)
 
@@ -52,6 +69,8 @@ This instruction enforces three policies across conversations, code generation, 
 
 ## Validation Checklist
 
-- Conversation in Chinese → reply in Chinese; abbreviations expanded without IPA; non-abbreviated English words or terms annotated with IPA in chat only.
+- Conversation in Chinese → reply in Chinese.
+- Technical terms → Chinese-first, English equivalent in parentheses on first use; abbreviations expanded to full form.
+- IPA → only for low-frequency words; collected at end of response in a `参考（发音）` section; never inline.
 - Code changes → all comments are in English.
 - Docs → English default + synchronized `-zh` file created/updated, with language-switch links.

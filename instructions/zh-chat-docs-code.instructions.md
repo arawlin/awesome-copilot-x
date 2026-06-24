@@ -1,5 +1,5 @@
 ---
-description: 'Chinese conversation rules, English-only code comments, and synchronized bilingual documentation policy (-zh)'
+description: 'Chinese conversation rules, English-only code comments, and Chinese-primary documentation policy'
 applyTo: '**'
 ---
 
@@ -54,24 +54,40 @@ This instruction enforces three policies across conversations, code generation, 
 - Do not insert Chinese comments into source code.
 - Keep comments concise, objective, and implementation-focused. Prefer imperative style (e.g., "Validate input", "Return early on error").
 
-## Documentation Policy (Bilingual with synchronized -zh)
+## Documentation Policy (Chinese-primary, Bilingual)
 
-- Default documentation is written in English.
-- For every documentation file created or updated, also create/update a sibling Chinese file with the `-zh` suffix before the extension.
-  - Examples: `README.md` → `README-zh.md`, `api-guide.md` → `api-guide-zh.md`.
-- Keep the English and Chinese documents synchronized:
-  - Any change to the English file MUST be mirrored in the `-zh` file in the same structure (sections, headings, lists, code blocks).
-  - If a section is added/removed/modified in English, apply the same structural change to the `-zh` file and translate the content accordingly.
+### New documents (no existing English file)
+
+- When creating a brand-new documentation file, write it in **Chinese as the primary document**. Do NOT add a `-zh` suffix.
+  - Example: creating a new guide → `api-guide.md` (Chinese content, no suffix).
+
+### Existing English documents
+
+- When an English documentation file already exists, create or update the Chinese translation with the `-zh` suffix before the extension.
+  - Examples: existing `README.md` (English) → create `README-zh.md` (Chinese); existing `api-guide.md` (English) → create `api-guide-zh.md` (Chinese).
+
+### Synchronization
+
+- Keep the primary document and its translation synchronized:
+  - Any change to the primary file MUST be mirrored in the translation file in the same structure (sections, headings, lists, code blocks).
+  - If a section is added/removed/modified, apply the same structural change to the translation file and translate the content accordingly.
   - If content is intentionally different across languages (rare), clearly mark the divergence at the top of the differing section in both files with a short note.
+
+### Language-switch links
+
 - Place language-switch links at the top of both files:
-  - English file: `This document is also available in [Chinese](./<name>-zh.md).`
-  - Chinese file: `本文档亦提供[英文版](./<name>.md)。`
+  - Chinese primary file (no suffix or `-zh`): `本文档亦提供[英文版](./<name>.md)。` (the English original without suffix).
+  - English primary file (no suffix): `This document is also available in [Chinese](./<name>-zh.md).`
 - Do not include IPA or abbreviation expansions within documentation unless they are technically relevant to the document content. The IPA rule applies only to chat responses.
 
 ## File Naming and Placement
 
 - Keep bilingual files side-by-side in the same directory to simplify maintenance.
 - Use hyphenated lowercase for new doc filenames, except conventional names like `README.md`.
+- Suffix conventions:
+  - Chinese primary (new doc): no suffix (e.g., `guide.md`).
+  - Chinese translation of existing English doc: `-zh` suffix (e.g., `guide-zh.md`).
+  - English primary: no suffix (e.g., `guide.md`).
 
 ## Validation Checklist
 
@@ -79,4 +95,4 @@ This instruction enforces three policies across conversations, code generation, 
 - Technical terms → Chinese-first, English equivalent in parentheses on first use; abbreviations expanded to full form.
 - IPA → only for low-frequency words; collected at end of response in a `参考（发音）` section with meaning + etymology; never inline.
 - Code changes → all comments are in English.
-- Docs → English default + synchronized `-zh` file created/updated, with language-switch links.
+- Docs → New docs: Chinese primary (no `-zh` suffix). Existing English docs: create/update `-zh` Chinese translation. Both sides synchronized with language-switch links.

@@ -35,8 +35,23 @@ For each document:
    - Assign confidence: `high` (directly stated), `medium` (reasonably inferred), `low` (speculative → requires human review).
    - Tag unsupported claims with `[unverified]`.
 
+### Knowledge Extraction Principles
+
+Wiki stores **knowledge** (why, how, patterns), not raw data (what, specs, parameters). Apply this decision matrix before extracting:
+
+| Reuse / Change | Low change rate | High change rate |
+|---------------|-----------------|------------------|
+| **High reuse** | ✅ Extract as concept | ⚠️ Patterns only, skip parameter tables |
+| **Low reuse** | ⚠️ Optional, low priority | ❌ Skip entirely |
+
+Examples:
+
+- ✅ **Extract**: auth mechanisms, rate limiting strategy, API type architecture, stream type patterns, local order book algorithm
+- ❌ **Skip**: endpoint parameter tables, full error code listings, change logs, quick-start copy-paste
+- 💡 Endpoint parameters live in raw `llms-full.txt` — AI agents query that directly for "what", Wiki answers "why" and "how".
+
 **Extraction rules:**
-- Prefer completeness over precision — "rather extract more than miss something."
+- Prefer **patterns and principles** over exhaustive enumeration — extract the "why" and "how to use", not "what are all the parameters".
 - Preserve original text snippets for provenance.
 - Mark uncertainty explicitly — never fabricate.
 - **Dedup check** (per `.wiki-config.yml` thresholds):

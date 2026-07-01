@@ -29,6 +29,14 @@ Based on the user's question, identify candidate pages:
 2. **Semantic relevance**: Prefer pages whose title/tags overlap with question domain.
 3. **Selection budget**: Select at most **10–15 pages** to stay within token budget (target: 1,500–12,000 tokens for page content).
 
+### Step 2.5: Check source page for raw fallback instruction
+
+Wiki concept/entity pages store **knowledge** (why, how, patterns). They deliberately omit **reference data** that lives in the original source document.
+
+1. Read the relevant `sources/` page for the topic domain.
+2. If the source page contains an `Agent 指令` block with a `fetch_webpage` URL, use that URL as the canonical reference for detail-level information not covered in Wiki pages.
+3. This is not domain-specific — it applies to any source (API docs, technical specs, protocol standards, etc.) where Wiki extracts the patterns and the raw source holds the exhaustive detail.
+
 ### Step 3: Read selected pages
 
 Read each selected page fully from `wiki/<type>/<id>.md`. Prioritize:

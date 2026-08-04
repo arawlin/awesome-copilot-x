@@ -38,7 +38,7 @@ git commit -m "wiki: <N> pages changed (added=<a>, modified=<m>, stale=<d>)"
 git push origin main
 ```
 
-### Step 3: Update checkpoint
+### Step 3: Update last_commit
 
 Update `wiki/index.md` frontmatter `last_commit` to the new HEAD SHA, then commit and push.
 

@@ -92,7 +92,9 @@ Body section must include a **"与我讨论的内容" (Discussed Content)** sect
 
 ### Step 7: Update activity log
 
-Append to `memories/wiki-activity.md` (User Memory): captured entities/concepts count, pending review count.
+1. Append operation record to `$LLM_WIKI_PATH/wiki/log.md` (JSON Lines).
+2. Append 1 full entry to `$LLM_WIKI_PATH/wiki/activity.md` (complete history).
+3. Update `/memories/wiki-activity.md` (user memory): add 1 entry to 最近更新, keep only the latest 5. Refresh 待办摘要 pending count.
 
 ## Constraints
 

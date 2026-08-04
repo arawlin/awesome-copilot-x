@@ -54,29 +54,30 @@ Examples:
 - Prefer **patterns and principles** over exhaustive enumeration — extract the "why" and "how to use", not "what are all the parameters".
 - Preserve original text snippets for provenance.
 - Mark uncertainty explicitly — never fabricate.
-- **Dedup check** (per `.wiki-config.yml` thresholds):
-  - Level 1: Exact slug match → AUTO-UPDATE (same source, 100% confidence).
-  - Level 2: Fuzzy title match > 85% → AUTO-MERGE (same source).
-  - Level 3: Semantic similarity > 0.75 → SUGGEST-MERGE (create merge suggestion).
-  - No match → CREATE new page.
+- **Dedup check** (LLM 语义判断，宁多勿少):
+  - Level 1: Exact slug match → AUTO-UPDATE existing page (same source).
+  - Level 2: LLM 语义判断 — 对比候选页面 title/内容，判断是否为同一实体/概念：
+    - 明显同一 → MERGE into existing page（合并内容，保留两条 provenance）。
+    - 疑似同一但不确定 → SUGGEST-MERGE（创建 `questions_pending/merge-*.md`）。
+    - 无匹配 → CREATE new page.
+  - 不确定时创建新页面（宁多勿少）—— 合并错误的代价远大于合并重复。
 
-### Step 3: Deduplication (five-band decision matrix)
+### Step 3: Deduplication (simplified three-band)
 
 | Band | Condition | Action |
 |------|-----------|--------|
-| 0 | Slug exact match + same source + 100% confidence | AUTO-UPDATE existing page |
-| 1 | Fuzzy title > 85% + same source | AUTO-MERGE into existing page |
-| 2 | Semantic > 0.75 | SUGGEST-MERGE (create `questions_pending/merge-*.md`) |
-| 3 | No match | CREATE new page |
-| 4 | Contradiction detected | FLAG (create `contradictions_pending/*.md`) |
+| 0 | Slug exact match + same source | AUTO-UPDATE existing page |
+| 1 | LLM 语义判断为同一实体/概念 | MERGE into existing page；不确定 → SUGGEST-MERGE (`questions_pending/merge-*.md`) |
+| 2 | No match | CREATE new page |
+| 3 | Contradiction detected | FLAG (create `contradictions_pending/*.md`) |
+
+> 依赖说明：去重不再依赖 RapidFuzz / SBERT（`all-MiniLM-L6-v2` 为英文模型，中文语义相似度不可靠）。语义判断由 LLM 完成。
 
 ### Step 4: Security filter
 
-Before writing any page, apply three-layer defense:
-
-1. **LLM semantic check**: Scan extracted content for credentials, PII, network topology, trade secrets, infrastructure details. If `sensitive` level detected → REJECT, do not generate.
-2. **gitleaks regex**: Run `gitleaks detect --source <content> --config $LLM_WIKI_PATH/.gitleaks.toml` on generated pages.
-3. **pre-commit hook**: Relies on the repo's `.git/hooks/pre-commit` gitleaks check.
+1. **LLM semantic check**（主力）: Scan extracted content for credentials, PII, network topology, trade secrets, infrastructure details. If `sensitive` level detected → REJECT, do not generate.
+2. **gitleaks (optional)**: If gitleaks is installed, run `gitleaks detect --source <content> --config $LLM_WIKI_PATH/.gitleaks.toml` on generated pages. Skip if not installed.
+3. **pre-commit hook (optional)**: If present, `.git/hooks/pre-commit` runs a gitleaks scan and skips gracefully when gitleaks is missing.
 
 ### Step 5: Write pages and update index
 

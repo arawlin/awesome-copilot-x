@@ -114,7 +114,7 @@ If bootstrap fails (< 2/3), suggest running Phase B (docs/) for more content.
 
 1. Update `wiki/index.md` with all new pages.
 2. Append bootstrap record to `wiki/log.md`.
-3. Update `memories/wiki-activity.md`.
+3. Append 1 full entry to `wiki/activity.md`; update `/memories/wiki-activity.md`（最近更新 滚动保留最近 5 条 + 刷新 待办摘要）.
 4. Report:
    ```
    ✅ Bootstrap successful!

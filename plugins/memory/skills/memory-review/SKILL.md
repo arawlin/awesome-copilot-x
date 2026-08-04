@@ -33,7 +33,7 @@ argument-hint: "[all|repo|user|session]"
 - 条目格式：`[日期] 结论 + Source`（无 Source 的标注缺失）。
 - 大小基线：单文件 >4KB 或 >120 行 → 建议拆分 / 瘦身；repo memory 总量 >30KB → 建议 consolidate。
 - Scope 正确性：通用方法论进了 repo memory → 建议迁移 user memory；项目事实进了 user memory → 反向迁移。
-- **文件组织**（规范来源：`memory-capture.instructions.md` §文件组织规范）：单一巨文件（如 `memory.md`）→ 建议拆分；按来源 / 时间命名（如 `context7.md`）→ 建议主题化；文件名非业务主题 → 建议重命名；同一条知识跨文件复制 → 建议收敛为单一事实源 + 引用。
+- **文件组织**（依据：全局指令 `memory-capture.instructions.md` §文件组织规范）：按该规范核对单文件主题纯度、命名语义、大小护栏与反模式——不在此复制规范内容，以指令为准。
 - 违反 memory 指南：冗长散文、缺日期、未去重。
 
 ## 工作流

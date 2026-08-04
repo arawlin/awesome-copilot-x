@@ -32,7 +32,7 @@ argument-hint: "[plan|apply]"
 
 ### Step 2: 按类型处理
 
-- **主题化 / 命名规范化**（规范来源：`memory-capture.instructions.md` §文件组织规范）：按来源或时间命名的文件（如 `context7.md`）→ 重命名 / 合并为业务主题文件；单一巨文件（如 `memory.md`）→ 按主题拆分。
+- **主题化 / 命名规范化**（依据：全局指令 `memory-capture.instructions.md` §文件组织规范）：按该规范重命名 / 合并非主题文件、拆分巨文件——不在此复制规范内容，以指令为准。
 - **合并**：同主题多文件 → 合并为一个，保留各自 Source 与日期；重复条目只留最新。
 - **迁移**：通用方法论 → user memory；项目事实 → repo memory（用 `memory rename` 或重建）。
 - **归档**：>60 天未引用且无 `⚠️` 标记的旧条目 → 删除或移入概括条目。

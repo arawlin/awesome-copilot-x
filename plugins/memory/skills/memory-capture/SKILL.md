@@ -1,6 +1,6 @@
 ---
 name: memory-capture
-description: Actively extract memory-worthy knowledge from the current conversation (or a selected range) and write it to the correct memory file per the memory-capture rules (filter → scope → topic file → dedup). Use when user asks to "review this session for memory", "extract memory entries", "capture what we learned", "盘点本会话/批量提取 memory". 规则单一事实源见 memory-capture.instructions.md；与 memory-review/consolidate 配合。
+description: 'Actively extract memory-worthy knowledge from the current conversation (or a selected range) and write it to the correct memory file per the memory-capture rules (filter → scope → topic file → dedup). Use when asked to "review this session for memory", "extract memory entries", "capture what we learned", or "memory 盘点/批量提取".'
 argument-hint: "[all|selection]"
 ---
 
@@ -10,11 +10,13 @@ argument-hint: "[all|selection]"
 
 > **规则单一事实源**：过滤标准、条目格式、scope 选择、文件组织规范均以 `memory-capture.instructions.md` 为准。本 skill 只执行流程，不复制规则，避免双源漂移。
 
-## 触发场景
+与 `/memory-review`（事后查矛盾 / 冗余）和 `/memory-consolidate`（合并 / 归档）配合：capture 写入，review 把关，consolidate 维护。
 
-- 「回顾本会话，把值得记的提取成 memory」
-- 「盘点这几次讨论的决策 / 踩坑」
-- 「把这段分析存进 repo memory」（先选定范围再调用）
+## When to Use This Skill
+
+- 用户要求盘点当前会话 / 指定范围，提取值得记的 memory 条目
+- 会话接近尾声时，主动沉淀本次讨论的决策与踩坑
+- 需要把某段分析按规则归档到正确主题文件时
 
 ## 工作流
 
@@ -54,9 +56,10 @@ argument-hint: "[all|selection]"
 
 按全局指令 `memory-capture.instructions.md` 的条目格式追加到对应文件末尾，遵守其每会话上限。
 
-## 约束
+## Gotchas
 
-- 写入前必须经用户确认（除非用户显式要求直接写）。
-- 遵守全局指令 `memory-capture.instructions.md` 的每会话上限。
-- 不复制全局指令的规则内容——按名字引用（该指令为全局注册，安装后路径不确定，不依赖相对路径），保持单一事实源。
-- 与 `/memory-review`（事后查矛盾 / 冗余）和 `/memory-consolidate`（合并 / 归档）配合：capture 写入，review 把关，consolidate 维护。
+- **不要**在用户确认前写入 memory——先呈现候选清单，经确认再写（除非用户显式要求直接写）。
+- **不要**跳过 `memory view` 查重直接追加——会产生重复条目。
+- **不要**省略 Source——每条必须可回查。
+- **不要**按自己的理解判断过滤 / scope / 文件归属——以全局指令 `memory-capture.instructions.md` 为准。
+- **不要**突破每会话上限——超出的只保留最有影响力，其余合并成一条概括。

@@ -47,3 +47,9 @@ flowchart LR
 
 - **llm-wiki**：wiki 是「人工审核的知识库」（`questions_pending/` 状态机）；memory 是「agent 上下文记忆」。`wiki-review` 是 `memory-review` 的参考模板。
 - **memory-management**（外部 SEO/GEO 插件）：管理 SEO 项目三 tier 记忆（HOT/WARM/COLD），与 VS Code memory tool 无关，职责不同，勿混用。
+
+## 作者维护约定
+
+- **单一事实源**：skill 不复制 `memory-capture.instructions.md` 的规则内容——按名字引用（该指令为 applyTo '**' 全局注册），规则变更自动跟随。
+- **不用相对路径引用全局指令**：skill 安装到用户级（如 `~/.agents/skills/`）后相对路径会漂移——相对路径 Markdown 链接只用于 skill 目录内资源。
+- **Gotchas 只写执行层**：Gotchas 面向执行 skill 的 agent，只放操作级警告（如跳过查重、省略 Source）；作者层规范放本节，不占用执行上下文。

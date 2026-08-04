@@ -1,36 +1,31 @@
 ---
-description: "跨会话 Wiki 上下文感知 — 会话启动时读取 wiki-activity.md 热缓存，提示用户 Wiki 最新状态"
+description: "跨会话 Wiki 上下文感知 — 通过 $LLM_WIKI_PATH 定位 Wiki，状态按需从事实源派生"
 applyTo: "**"
 ---
 
 # Wiki 跨会话上下文
 
-## 触发时机
+## 定位与指针
 
-每次新会话启动时，自动执行以下步骤。
+- Wiki 数据仓库通过环境变量 `$LLM_WIKI_PATH` 定位。
+- **完整操作历史**：`$LLM_WIKI_PATH/wiki/activity.md`（git 追踪，唯一的人类可读历史档案）。
+- **审计日志**：`$LLM_WIKI_PATH/wiki/log.md`（JSON Lines）。
+- **索引**：`$LLM_WIKI_PATH/wiki/index.md`（页面目录 + freshness 策略）。
 
-## 步骤
+> 不再维护 user memory 热缓存（`wiki-activity.md` 已移除）。原因：易变状态放入稀缺的常驻预算会产生漂移，且实证不驱动 agent 行为；状态一律从事实源按需派生。
 
-### 1. 读取热缓存
+## 按需派生状态（当用户询问 Wiki 或执行 wiki 操作时）
 
-`/memories/wiki-activity.md` 属于 **user memory**，其内容（最近 5 条 + 待办摘要 + 上次会话）已随 user memory 前 200 行**合并预算**自动加载进上下文——**无需额外读取**。
+不要信任二手缓存，直接从事实源派生：
 
-> ⚠️ 注意：user memory 的 200 行是**全部文件汇总后的上限**（含 `## 文件名` 标题行），不是单文件 200 行。因此 `wiki-activity.md` 必须保持精简，否则字母序靠后的内容会被截断。
+1. **最近更新**：读取 `$LLM_WIKI_PATH/wiki/log.md` 尾部（最近若干条 JSON Lines）。
+2. **待审核**：`ls $LLM_WIKI_PATH/questions_pending/` 计数。
+3. **Lint 问题**：`ls $LLM_WIKI_PATH/lint_pending/` 计数。
+4. **上次会话**：`$LLM_WIKI_PATH/wiki/activity.md` 顶部最新条目。
 
-如需完整操作历史，读取 `$LLM_WIKI_PATH/wiki/activity.md`（git 追踪，不占用 user memory 预算）。
+## 向用户提示
 
-### 2. 解析 Wiki 状态
-
-从已加载的 `wiki-activity.md` 中提取：
-
-- **最近更新**：最近 5 条操作
-- **待审核**：`questions_pending/` 待审核条目数量
-- **Lint 问题**：`lint_pending/` 待处理问题数量
-- **上次会话摘要**
-
-### 3. 向用户提示
-
-简短提示 Wiki 最新状态，格式如下：
+当用户询问 Wiki 状态或开始 wiki 相关任务时，可简短提示：
 
 ```
 📚 Wiki 状态：
@@ -39,10 +34,10 @@ applyTo: "**"
 - Z 个 lint 问题待处理
 ```
 
-不强制交互，仅被动提示。如用户询问 Wiki 相关问题，优先从 Wiki 热缓存中检索。
+不强制交互，仅在被询问或任务相关时提供。不主动打断无关会话。
 
-## 更新触发（写回路径）
+## 写回路径（wiki 操作后）
 
-- **`$LLM_WIKI_PATH/wiki/log.md`**（JSON Lines 审计日志）— `/wiki-capture`、`/wiki-ingest`、`/wiki-review`、`/wiki-lint`、`/wiki-sync` 每次操作的完整记录。
-- **`$LLM_WIKI_PATH/wiki/activity.md`**（完整人类可读历史）— 追加 1 条完整操作记录。
-- **`/memories/wiki-activity.md`**（user memory 精简热缓存）— 追加 1 条并**滚动保留最近 5 条**；详细历史不再写入 user memory。
+- **`$LLM_WIKI_PATH/wiki/log.md`**（JSON Lines）— `/wiki-capture`、`/wiki-ingest`、`/wiki-review`、`/wiki-lint`、`/wiki-sync` 每次操作的完整记录。
+- **`$LLM_WIKI_PATH/wiki/activity.md`** — 追加 1 条完整人类可读记录。
+- user memory 不写入任何 wiki 状态。

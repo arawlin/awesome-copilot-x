@@ -104,7 +104,8 @@ Before approving, check if any referenced source pages have been updated since t
 
 1. Append review operation record to `$LLM_WIKI_PATH/wiki/log.md` (JSON Lines).
 2. Append 1 full entry to `$LLM_WIKI_PATH/wiki/activity.md` (complete history).
-3. Update `/memories/wiki-activity.md` (user memory): 最近更新 滚动保留最近 5 条 + 刷新 待办摘要 pending count.
+
+> 不再写 user memory（wiki-activity.md 已移除）——状态按需从 log.md / questions_pending/ 派生。
 
 ## Rejected Item Retention
 

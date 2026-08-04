@@ -83,7 +83,7 @@ flowchart TD
 | Instruction | applyTo | 作用 |
 |-------------|---------|------|
 | `llm-wiki-schema.instructions.md` | `**/wiki/**/*.md` | 所有 Wiki 页面必须遵循的 frontmatter 规范 |
-| `wiki-context.instructions.md` | `**` | 会话启动时自动读取 Wiki 热缓存，提示最新状态 |
+| `wiki-context.instructions.md` | `**` | Wiki 定位指针 + 状态按需从事实源派生（log.md / questions_pending/） |
 
 ## 环境变量
 

@@ -1,4 +1,5 @@
 ---
+name: 'Memory Capture'
 description: 'Extract reusable knowledge into memory — external sources and in-session findings, with scope selection and dedup rules. 通用 memory 提取准则'
 applyTo: '**'
 ---
@@ -24,7 +25,7 @@ applyTo: '**'
 - **已验证**？亲手验证 / 实测 / 官方确认
 - **高频**？未来会话大概率需要
 
-满足 0-1 条 → 不记，留在 source 文档中。
+满足 0-1 条 → 不记，留在 source 文档中。理由：memory 是精炼索引而非文档副本，冗余条目会稀释 agent 的信噪比。
 
 ## 优先级标记
 
@@ -33,13 +34,19 @@ applyTo: '**'
 
 ## 每会话上限
 
-最多 **8 条**。超出的只保留最有影响力的，其余合并成一条概括。
+最多 **8 条**。超出的只保留最有影响力的，其余合并成一条概括。理由：防止单会话大量写入淹没 memory，宁可少而精。
 
 ## 条目格式（单行）
 
 ```markdown
 - [YYYY-MM-DD] ⚠️ 结论。Source: <tool>: <params>
 ```
+
+示例：
+
+- [2026-06-24] `useOptimistic` requires reducer signature `(state, action) => newState`. Source: context7: /vercel/next.js, topic="useOptimistic", mode=code, page=1.
+- [2026-06-24] ⚠️ React 19 removes `forwardRef` — ref is now a regular prop. Source: fetch_webpage: https://react.dev/blog/2024/12/05/react-19.
+- [2026-08-01] ⚠️ 结论。Source: repo: new-bitres-web-server <上下文>
 
 Source 必须可回查：
 

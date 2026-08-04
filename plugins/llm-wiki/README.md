@@ -24,11 +24,8 @@ plugins/
 │   ├── wiki-capture/SKILL.md   # 会话知识捕获
 │   ├── wiki-review/SKILL.md    # 人工审核
 │   └── wiki-bootstrap/SKILL.md # 冷启动引导
-├── agents/                     # Copilot Agents（专用 AI agent）
-│   ├── wiki-ingestor.agent.md
-│   ├── wiki-querier.agent.md
-│   ├── wiki-linter.agent.md
-│   └── wiki-reviewer.agent.md
+├── agents/                     # Copilot Agents（统一 @wiki agent）
+│   └── wiki.agent.md
 └── instructions/               # Copilot Instructions（共享规则）
     ├── llm-wiki-schema.instructions.md  # Wiki 页面格式规范
     └── wiki-context.instructions.md     # 跨会话上下文感知
@@ -70,19 +67,16 @@ flowchart TD
 | 核心 | `/wiki-ingest` | 编译摄入已批准的知识和原始文档 | `questions_approved/` + `raw/` → `wiki/` | `$LLM_WIKI_PATH` 工作区 |
 | 核心 | `/wiki-query` | 查询 Wiki 知识库，返回带 [[WikiLink]] 引用的综合回答 | 用户问题 → 带引用的答案 | `$LLM_WIKI_PATH` 工作区 |
 | 核心 | `/wiki-lint` | 健康检查：发现矛盾、孤立页面、过期内容、格式违规 | `wiki/` → `lint_pending/` | `$LLM_WIKI_PATH` 工作区 |
-| 辅助 | `/wiki-sync` | 基于 Commit SHA checkpoint 增量同步到远程 | 本地变更 → 远程仓库 | `$LLM_WIKI_PATH` 工作区 |
+| 辅助 | `/wiki-sync` | 直接提交并推送到 origin/main（单人简化，无分支/checkpoint 机制） | 本地变更 → 远程仓库 | `$LLM_WIKI_PATH` 工作区 |
 | 辅助 | `/wiki-bootstrap` | 从 GitHub 仓库冷启动构建 Wiki | GitHub 仓库 → 初始 Wiki 页面 | `$LLM_WIKI_PATH` 工作区 |
 
 ## Agent 配置
 
-每个 Agent 对应一个 Skill，在 Copilot Chat 中通过 `@agent-name` 调用：
+统一的 `@wiki` Agent 按用户意图路由到对应 Skill 工作流，在 Copilot Chat 中通过 `@wiki` 调用：
 
-| Agent | 对应 Skill | 可用工具 |
+| Agent | 覆盖 Skill | 可用工具 |
 |-------|-----------|----------|
-| `@wiki-ingestor` | `/wiki-ingest` | read_file, create_file, replace_string_in_file, list_dir, run_in_terminal, grep_search |
-| `@wiki-querier` | `/wiki-query` | read_file, list_dir, grep_search |
-| `@wiki-linter` | `/wiki-lint` | read_file, create_file, list_dir, run_in_terminal, grep_search |
-| `@wiki-reviewer` | `/wiki-review` | read_file, create_file, replace_string_in_file, list_dir, run_in_terminal |
+| `@wiki` | `/wiki-capture`、`/wiki-review`、`/wiki-ingest`、`/wiki-query`、`/wiki-lint`、`/wiki-sync`、`/wiki-bootstrap` | read_file, create_file, replace_string_in_file, list_dir, run_in_terminal, grep_search |
 
 ## Instruction 说明
 

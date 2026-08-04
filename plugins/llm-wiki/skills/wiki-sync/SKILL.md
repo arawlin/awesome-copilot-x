@@ -1,77 +1,51 @@
 ---
 name: wiki-sync
-description: Incremental Git sync for the LLM Wiki — detect changes via commit SHA checkpoint, handle six change types (Added/Modified/Deleted/Renamed/Copied/Type-changed), commit via sync/auto-{timestamp} branches. Use when user asks to "sync wiki", "push wiki changes", or after ingest/review sessions.
-argument-hint: "[--dry-run] [--force]"
+description: Sync the LLM Wiki to remote Git — commit wiki changes and push to origin/main directly (single-user simplification). Restores any deleted wiki pages as stale instead of physical deletion. Use when user asks to "sync wiki", "push wiki changes".
+argument-hint: "[--dry-run]"
 ---
 
-# Wiki Sync — 增量同步
+# Wiki Sync — 同步到远程
 
-Synchronize wiki changes to the remote Git repository using commit SHA checkpoint mechanism (adapted from yysun/git-wiki).
+Single-user direct sync: commit wiki changes and push to `origin/main`. No feature branches, no conflict machinery.
 
 ## Prerequisites
 
-- The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
-- Read `wiki/.wiki-config.yml` for sync configuration.
+- The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH`.
+- If no remote is configured, commit locally and skip push.
 
 ## Workflow
 
 ### Step 1: Detect changes
 
-Read the `last_commit` value from `wiki/index.md` frontmatter:
-
 ```bash
-git diff --name-status -M50% <last_commit> HEAD
+cd "$LLM_WIKI_PATH" && git status --short
 ```
 
-If `last_commit` is `null` (first sync), use initial commit.
+Classify changes:
 
-### Step 2: Classify changes
+| Git status | Action |
+|-----------|--------|
+| `A` | New page — commit as-is |
+| `M` | Modified — commit changes |
+| `D` | Deleted wiki page — **never physically delete**: restore from HEAD (`git checkout HEAD -- <file>`), set frontmatter `status: stale`, `stale_reasons: ["source_deleted"]`, then commit |
+| `R` | Renamed — move file + update all `[[WikiLink]]` references |
 
-| Git status | Change type | Action |
-|-----------|-------------|--------|
-| `A` | Added | New page — commit as-is |
-| `M` | Modified | Updated page — commit changes |
-| `D` | Deleted | Mark as `stale` in frontmatter (NEVER physically delete wiki pages) |
-| `Rxxx` | Renamed | Move file + update all `[[WikiLink]]` references |
-| `Cxxx` | Copied | New page derived from existing — commit as new |
-| `T` | Type changed | Update metadata only |
+### Step 2: Commit and push
 
-### Step 3: Handle deleted files
+```bash
+git add wiki/ raw/ questions_pending/ questions_approved/ lint_pending/ rejected/
+git commit -m "wiki: <N> pages changed (added=<a>, modified=<m>, stale=<d>)"
+git push origin main
+```
 
-**CRITICAL: Never physically delete wiki pages.** When `git diff` shows `D`:
-1. Restore the file from previous commit: `git checkout <last_commit> -- <file>`
-2. Update frontmatter: set `status: stale`, `stale_reasons: ["source_deleted"]`
-3. Commit the restored file with updated metadata.
+### Step 3: Update checkpoint
 
-### Step 4: Commit and push
+Update `wiki/index.md` frontmatter `last_commit` to the new HEAD SHA, then commit and push.
 
-1. Create sync branch: `sync/auto-{YYYY-MM-DD-HHmmss}`
-2. Commit all changes with message:
-   ```
-   sync: <N> pages changed (added=<a>, modified=<m>, renamed=<r>, stale=<d>)
-   ```
-3. Push branch to remote.
-4. Update `wiki/index.md` frontmatter `last_commit` to new HEAD SHA.
-5. Append sync record to `wiki/log.md`.
+### Step 4: Log
 
-### Step 5: Conflict resolution (if needed)
-
-If remote has diverged:
-1. Fetch remote: `git fetch origin`
-2. Detect conflicts: `git diff <local>..<remote> -- wiki/`
-3. **File-level conflicts**: Prefer local changes (wiki is source of truth).
-4. **Semantic conflicts**: Flag for human review in `lint_pending/sync-conflict-*.md`.
-5. Force push only with `--force` flag.
-
-## Sync Frequency
-
-| Frequency | Trigger | Use case |
-|-----------|---------|----------|
-| Immediate | After each page write | No conflict risk (single user) |
-| Session-end | After `/wiki-capture` session | Low conflict risk |
-| After-review | After `/wiki-review` approval | Human-confirmed changes |
+Append sync record to `wiki/log.md` (JSON Lines).
 
 ## Options
 
-- `--dry-run`: Detect changes and report without committing.
-- `--force`: Force push to remote (use with caution).
+- `--dry-run`: Report detected changes without committing.

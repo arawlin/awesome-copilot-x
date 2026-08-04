@@ -10,6 +10,7 @@ plugins/memory/
 ├── instructions/
 │   └── memory-capture.instructions.md   # 提取准则（常驻规则）
 └── skills/
+    ├── memory-capture/SKILL.md          # 主动提取（盘点会话/批量）
     ├── memory-review/SKILL.md           # 审查：冗余 / 矛盾 / 合规
     └── memory-consolidate/SKILL.md      # 整合：合并 / 迁移 / 归档
 ```
@@ -21,6 +22,7 @@ Memory 生命周期采用「常驻提取 → 人工审查 → 执行整合」三
 ```mermaid
 flowchart LR
     A["💬 会话进行中"] -->|"memory-capture 指令<br/>（自动，常驻）"| B["📝 memory 文件<br/>user / repo / session"]
+    A -->|"/memory-capture<br/>（主动盘点）"| B
     B -->|"/memory-review"| C{"👤 人工审查"}
     C -->|"发现矛盾 / 冗余 / 违规"| D["📋 分级问题清单"]
     D -->|"/memory-consolidate"| E["🛠️ 合并 / 迁移 / 归档"]
@@ -31,6 +33,7 @@ flowchart LR
 
 | 命令 | 功能 | 输入 → 输出 | 适用范围 |
 |------|------|------------|----------|
+| `/memory-capture` | 主动盘点会话（或指定范围），按规则提取并写入正确主题文件（过滤 → scope → 文件归属 → 查重，人确认） | 会话 → memory 文件 | 任意工作区 |
 | `/memory-review` | 三查：冗余 / 矛盾 / 最佳实践合规，产出分级问题清单（🔴🟡🟢）供人裁决 | memory 文件 → 修复清单 | 任意工作区 |
 | `/memory-consolidate` | 执行修复：合并同主题文件、迁移 scope、归档过期条目、拆分超限文件 | 问题清单 → 整洁 memory | 任意工作区 |
 

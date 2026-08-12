@@ -41,7 +41,7 @@ flowchart LR
 
 | Instruction | applyTo | 作用 |
 |-------------|---------|------|
-| `memory-capture.instructions.md` | `**` | 会话中自动提取可复用知识到 memory：三档 scope 选择、触发信号、三条过滤标准、上限 8 条/会话、单行格式与去重 |
+| `memory-capture.instructions.md` | `**` | 会话中自动提取可复用知识到 memory：三档 scope 选择、触发信号、分层过滤标准（user 档从严 + 默认降级 + 人工确认门）、上限 8 条/会话、单行格式与去重 |
 
 ## 与其他插件的关系
 

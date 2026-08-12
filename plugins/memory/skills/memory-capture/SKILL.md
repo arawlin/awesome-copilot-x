@@ -36,8 +36,8 @@ argument-hint: "[all|selection]"
 
 对每个候选，按全局指令 `memory-capture.instructions.md` 依次执行：
 
-1. **过滤**：按指令的分层过滤标准判定——session/repo 满足 ≥1 条即可；**user 需三条全满足 + 跨项目通用**
-2. **scope**：按指令的 scope 选择规则归入 user / repo / session——**拿不准一律降级到 session/repo，user 档默认不写**
+1. **过滤**：按指令的过滤标准判定是否可记
+2. **scope**：按指令的 scope 选择规则归入 user / repo / session
 3. **文件归属**：按指令的文件组织规范选择主题文件——已有匹配 → 追加；不匹配 → 新建
 4. **查重**：`memory view` 对应文件，已有则跳过或合并
 
@@ -52,14 +52,9 @@ argument-hint: "[all|selection]"
 [全部写入] [逐条选择] [跳过]
 ```
 
-> 候选含 **user 档** 条目时，在表格中标注 `🔒 user`，并等待用户明确确认后再写。
-
 ### Step 5: 写入（经确认）
 
 按全局指令 `memory-capture.instructions.md` 的条目格式追加到对应文件末尾，遵守其每会话上限。
-
-- session / repo：经整体确认后写入
-- **user：必须逐条获得用户明确确认后才写入**
 
 ## Gotchas
 

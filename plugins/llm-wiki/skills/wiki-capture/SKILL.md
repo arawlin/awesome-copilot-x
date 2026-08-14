@@ -1,6 +1,6 @@
 ---
 name: wiki-capture
-description: Capture knowledge from the current Copilot Chat session — extract entities, concepts, relationships, and decisions, then write structured output to questions_pending/ for human review. Works from ANY workspace by detecting $LLM_WIKI_PATH. Use when user asks to "capture this conversation", "save to wiki", "extract knowledge", or after a significant technical discussion.
+description: 'Capture knowledge from the current Copilot Chat session — extract entities, concepts, relationships, and decisions, then write structured output to questions_pending/ for human review. Works from ANY workspace by detecting $LLM_WIKI_PATH. Use when user asks to "capture this conversation", "save to wiki", "extract knowledge", or after a significant technical discussion.'
 argument-hint: "[--scope <current-turn|full-session>]"
 ---
 
@@ -12,7 +12,8 @@ Extract structured knowledge from the current Chat session and write to `questio
 
 - Environment variable `$LLM_WIKI_PATH` must point to the llm-wiki repo.
 - If `$LLM_WIKI_PATH` is not set, fall back to writing to `.wiki-capture/` in the current workspace.
-- Read `plugins/instructions/llm-wiki-schema.instructions.md` for page format.
+- Read the instruction file `llm-wiki-schema.instructions.md` for page format. If unavailable, follow the frontmatter template in Step 6 of this skill.
+- Session limits come from `wiki/.wiki-config.yml` (`capture_max_items_per_run`); use the default when the config is absent.
 
 ## Workflow
 
@@ -101,6 +102,6 @@ Body section must include a **"与我讨论的内容" (Discussed Content)** sect
 
 ## Constraints
 
-- Maximum **10 extracted items** per capture run.
+- Maximum **10 extracted items** per capture run (default; override via `.wiki-config.yml` `capture_max_items_per_run`).
 - Low-confidence items always require human review (never auto-approve).
 - Sensitive items are blocked — do not write to any file.

@@ -215,3 +215,51 @@ approved_at: <YYYY-MM-DD>
 ```
 
 正文结构：问题 → 综合回答（含引用）→ 来源
+
+### Index（索引页面）
+
+位于 `wiki/index.md`，全库唯一索引页。
+
+```yaml
+---
+type: index
+id: index
+title: "LLM Wiki 索引"
+created: <YYYY-MM-DD>
+updated: <YYYY-MM-DD>
+last_commit: <sha>
+schema_version: "0.1"
+---
+```
+
+正文结构：按页面类型（sources / entities / concepts / synthesis）分组的链接列表，采用 llms.txt 标准行格式（llmstxt.org）：
+
+```markdown
+- [页面标题](<type>/<id>.md): 一句话描述
+```
+
+规则：
+
+- **小而分层**：一行一页 + 一句话描述，按类型/主题分组，低优先级链接放 `## Optional` 节。
+- **agent 检索阈值**：索引超过约 20K token 时，查询改用 BM25 预筛（wiki-query skill 自带脚本），不再整读索引。
+- **拆分阈值**：全库索引超过约 1M token 上下文窗口时，拆出主题级索引页（MOC），根索引只保留指针。
+
+## 运行参数（.wiki-config.yml）
+
+`wiki/.wiki-config.yml` 是全部可调阈值的单一事实源（policy as configuration）。Skill 使用下方默认值，配置存在时以配置为准：
+
+```yaml
+# Session limits (defaults below are initial values — recalibrate after real runs)
+review_max_items_per_session: 20   # /wiki-review
+capture_max_items_per_run: 10      # /wiki-capture
+ingest_max_pages_per_run: 15       # /wiki-ingest
+bootstrap_max_pages: 50            # /wiki-bootstrap
+
+# Retention defaults for rejected items (days)
+rejected_retention_days:
+  duplicate: 1
+  low_quality: 7
+  outdated: 30
+```
+
+⚠️ 限额参数为初始默认值，未经真实运行校准——首次实测后应回填校准值。

@@ -1,6 +1,6 @@
 ---
 name: wiki-review
-description: Review pending wiki knowledge entries — approve, reject, or revise items in questions_pending/ via three-state file-system state machine, with quality gates (self-containment, size, granularity), synthesis draft approval, and a legacy merge mode for pages violating current granularity rules. Use when user asks to "review wiki changes", "approve pending", or manage the human-gated knowledge workflow.
+description: 'Review pending wiki knowledge entries — approve, reject, or revise items in questions_pending/ via three-state file-system state machine, with quality gates (self-containment, size, granularity), synthesis draft approval, and a legacy merge mode for pages violating current granularity rules. Use when user asks to "review wiki changes", "approve pending", or manage the human-gated knowledge workflow.'
 argument-hint: "[all|batch|slug <id>]"
 ---
 
@@ -11,7 +11,8 @@ Human-gated approval workflow for pending wiki knowledge entries. Uses file-syst
 ## Prerequisites
 
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
-- Read `plugins/instructions/llm-wiki-schema.instructions.md` for review frontmatter fields.
+- Read the instruction file `llm-wiki-schema.instructions.md` for review frontmatter fields.
+- Read `wiki/.wiki-config.yml` for session limits and retention thresholds (defaults apply when absent).
 
 ## Review Modes
 
@@ -152,10 +153,12 @@ Audit existing pages that violate current granularity rules (e.g., over-split su
 | Outdated | 30 days | `rejected/YYYY-MM/<id>.md` |
 | Contradiction | Permanent | `rejected/permanent/<id>.md` |
 
+Retention days are defaults (uncalibrated) — override via `.wiki-config.yml` `rejected_retention_days`.
+
 Run `tools/cleanup-rejected.sh` periodically to purge expired rejected items.
 
 ## Constraints
 
-- Maximum **20 items** per review session (to avoid overwhelming the user).
+- Maximum **20 items** per review session (default; override via `.wiki-config.yml` `review_max_items_per_session`) to avoid overwhelming the user.
 - Rejected items must always include a `reason` in the review record.
 - Never auto-approve low-confidence items — they always require individual review.

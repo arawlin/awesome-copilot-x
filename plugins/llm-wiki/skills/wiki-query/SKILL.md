@@ -1,6 +1,6 @@
 ---
 name: wiki-query
-description: Query the LLM Wiki knowledge base — read wiki/index.md for directory, selectively load relevant pages, synthesize answers with [[WikiLink]] citations. Use when user asks questions that may be answered by wiki knowledge, wants to "search the wiki", or needs cross-referenced information from the knowledge base.
+description: 'Query the LLM Wiki knowledge base — read wiki/index.md for directory, selectively load relevant pages, synthesize answers with [[WikiLink]] citations. Use when user asks questions that may be answered by wiki knowledge, wants to "search the wiki", or needs cross-referenced information from the knowledge base.'
 argument-hint: "<question>"
 ---
 
@@ -11,7 +11,7 @@ Answer user questions by reading and synthesizing information from the LLM Wiki 
 ## Prerequisites
 
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
-- Read `plugins/instructions/llm-wiki-schema.instructions.md` for WikiLink syntax and page structure.
+- Read the instruction file `llm-wiki-schema.instructions.md` for WikiLink syntax and page structure.
 
 ## Workflow
 
@@ -25,10 +25,15 @@ Read `$LLM_WIKI_PATH/wiki/index.md` to get the full page directory. Parse:
 
 Based on the user's question, identify candidate pages:
 
-1. **Index scan**: Read `wiki/index.md` (whole-wiki llms.txt) — match question terms against page titles, tags, and IDs.
-2. **Knowledge map navigation**: For the matching domain, read the relevant `sources/` page's `## 知识地图` to locate the exact knowledge block (and its home page) instead of guessing from titles.
-3. **Semantic relevance**: Prefer pages whose title/tags overlap with question domain.
-4. **Selection budget**: Select at most **10–15 pages** to stay within token budget (target: 1,500–12,000 tokens for page content).
+1. **BM25 pre-filter (large wikis only)**: If `wiki/index.md` exceeds ~20K tokens or the wiki has more than ~5,000 pages, run the bundled search script instead of scanning the whole index:
+   ```bash
+   python3 <skill-dir>/scripts/search.py "<question>" --top-k 15
+   ```
+   The script prints ranked `[[<type>/<id>]]` candidates with scores — use these as the candidate set and skip steps 2–4.
+2. **Index scan**: Read `wiki/index.md` (whole-wiki llms.txt, entries in standard llms.txt line format) — match question terms against page titles, tags, and IDs.
+3. **Knowledge map navigation**: For the matching domain, read the relevant `sources/` page's `## 知识地图` to locate the exact knowledge block (and its home page) instead of guessing from titles.
+4. **Semantic relevance**: Prefer pages whose title/tags overlap with question domain.
+5. **Selection budget**: Select at most **10–15 pages** to stay within token budget (target: 1,500–12,000 tokens for page content).
 
 ### Step 2.5: Check source page for raw fallback instruction
 
@@ -77,7 +82,7 @@ List all pages consulted at the end of the answer:
 
 - Pure file approach works well for **0–5,000 pages** (validated in performance-scale-estimation-spike).
 - Single query consumes ~1,500–12,000 tokens regardless of total wiki size.
-- If `wiki/index.md` exceeds ~20K tokens, recommend introducing BM25 search.
+- Beyond that, the bundled BM25 pre-filter ([`search.py`](./scripts/search.py), zero-dependency Python 3) keeps candidate selection within budget — see Step 2.1.
 
 ## Output Constraints
 

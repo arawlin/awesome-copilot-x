@@ -1,6 +1,6 @@
 ---
 name: wiki-lint
-description: Run health checks on the LLM Wiki — detect contradictions, orphan pages, stale content, format violations, and LLM-consumption issues (oversized pages, missing knowledge maps, missing detail pointers, oversized index). Output issues to lint_pending/ for human review, never directly modify pages. Use when user asks to "check wiki health", "lint wiki", "find issues", or audit knowledge base quality.
+description: 'Run health checks on the LLM Wiki — detect contradictions, orphan pages, stale content, format violations, and LLM-consumption issues (oversized pages, missing knowledge maps, missing detail pointers, oversized index). Output issues to lint_pending/ for human review, never directly modify pages. Use when user asks to "check wiki health", "lint wiki", "find issues", or audit knowledge base quality.'
 argument-hint: "[--scope <all|stale|orphans|contradictions|format>]"
 ---
 
@@ -11,7 +11,7 @@ Audit the LLM Wiki for quality issues. All findings go to `lint_pending/` — **
 ## Prerequisites
 
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
-- Read `plugins/instructions/llm-wiki-schema.instructions.md` for page lifecycle and frontmatter rules.
+- Read the instruction file `llm-wiki-schema.instructions.md` for page lifecycle and frontmatter rules.
 - Read `wiki/.wiki-config.yml` for freshness thresholds.
 
 ## Lint Checks
@@ -74,6 +74,7 @@ Deterministic structural checks aligned with the LLM-consumption rules (schema: 
 | Missing raw-document query block | Source page lacks `## 原始文档查询` → `missing-raw-query-<id>.md` |
 | Missing detail pointer | Entity/concept page has no trailing detail pointer → `missing-detail-pointer-<id>.md` |
 | Oversized index | `wiki/index.md` > ~20K tokens → `index-oversized.md` (suggest topic-level MOC split) |
+| Non-standard index format | Index entries not in llms.txt line format (`- [title](path): description`) → `index-format.md` |
 
 ## Output
 

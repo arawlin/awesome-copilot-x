@@ -1,6 +1,6 @@
 ---
 name: wiki-bootstrap
-description: Bootstrap a new LLM Wiki from a GitHub repository — extract knowledge from README, docs/, issues, and PRs using 4-level priority extraction. Target: 3 startup questions answerable, minimum 11 pages. Use when user asks to "bootstrap wiki", "initialize wiki from repo", or start a fresh knowledge base.
+description: 'Bootstrap a new LLM Wiki from a GitHub repository — extract knowledge from README, docs/, issues, and PRs using 4-level priority extraction. Target: 3 startup questions answerable, minimum 11 pages. Use when user asks to "bootstrap wiki", "initialize wiki from repo", or start a fresh knowledge base.'
 argument-hint: "[--repo <path>] [--phases <A|AB|ABC>]"
 ---
 
@@ -12,7 +12,7 @@ Initialize a new LLM Wiki from an existing GitHub repository.
 
 - Target repo must be accessible locally.
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
-- Read `plugins/instructions/llm-wiki-schema.instructions.md` for page format.
+- Read the instruction file `llm-wiki-schema.instructions.md` for page format.
 
 ## Extraction Phases (4-level priority)
 
@@ -128,7 +128,7 @@ If bootstrap fails (< 2/3), suggest running Phase B (docs/) for more content.
 
 ## Constraints
 
-- Maximum total pages: **50 per bootstrap session**.
+- Maximum total pages: **50 per bootstrap session** (default; override via `.wiki-config.yml` `bootstrap_max_pages`).
 - Minimum viable: **11 pages** (1 source + 5 entity + 5 concept).
 - Issues/PRs phases are **opt-in only** — never scrape without user consent.
 - Human-gated: batch confirmation required before finalizing.

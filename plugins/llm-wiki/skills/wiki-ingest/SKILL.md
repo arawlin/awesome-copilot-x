@@ -17,7 +17,7 @@ Read documents from `raw/`, extract knowledge, and generate structured wiki page
 ## Prerequisites
 
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
-- Read `plugins/instructions/llm-wiki-schema.instructions.md` for the page format specification.
+- Read the instruction file `llm-wiki-schema.instructions.md` for the page format specification.
 - Read `wiki/.wiki-config.yml` for dedup thresholds and security rules.
 
 ## Workflow
@@ -141,12 +141,12 @@ Examples:
 3. Write concept pages to `wiki/concepts/<slug>.md` — end with a one-line **detail pointer** to its source page / original document (progressive disclosure).
 4. Fill `related` with semantic relations (see Step 4.3), and add back-links from every extracted page to its source page.
 5. **Optional cross-document synthesis** (draft): create a `wiki/synthesis/` page only when a question spans multiple source pages and no single page answers it — the manual equivalent of GraphRAG's community summary. Do NOT use synthesis to restate a single document (its knowledge map already covers that). Synthesis pages require human approval (`approved_by`) — ingest only produces the draft, review approves it.
-6. Update `wiki/index.md` — the **whole-wiki llms.txt**: keep it small and layered (one line per page with a short description, grouped by type/theme, an `Optional` section for low-priority links). Append new pages under appropriate sections. The split threshold is a **1M-token context window**: only when the index exceeds 1M tokens do you split it into topic-level index pages (MOC-style).
+6. Update `wiki/index.md` — the **whole-wiki llms.txt**: append new pages in the standard llms.txt line format `- [title](<type>/<id>.md): one-line description` (see schema, Index 节), grouped by type/theme, with an `Optional` section for low-priority links. The split threshold is a **1M-token context window**: only when the index exceeds 1M tokens do you split it into topic-level index pages (MOC-style).
 7. Append operation record to `wiki/log.md` in JSON Lines format.
 
 ### Page Limits
 
-- Maximum **15 pages** per ingest run (1 source + up to 7 entity + up to 7 concept).
+- Maximum **15 pages** per ingest run (1 source + up to 7 entity + up to 7 concept) — default value; override via `wiki/.wiki-config.yml` (`ingest_max_pages_per_run`).
 - If a document would generate more, first re-apply Step 3 (drop data tables, merge sub-flows with no standalone retrieval value); if the remaining pages are all self-contained with distinct retrieval value, split the ingest into multiple sessions rather than forcing merges.
 
 ## Gotchas
@@ -172,8 +172,8 @@ Examples:
 
 ## References
 
-- `plugins/instructions/llm-wiki-schema.instructions.md` — page format, frontmatter, WikiLink syntax
-- `plugins/instructions/wiki-context.instructions.md` — cross-session context, `$LLM_WIKI_PATH` conventions
+- `llm-wiki-schema.instructions.md` — page format, frontmatter, WikiLink syntax
+- `wiki-context.instructions.md` — cross-session context, `$LLM_WIKI_PATH` conventions
 
 ## Output Format
 

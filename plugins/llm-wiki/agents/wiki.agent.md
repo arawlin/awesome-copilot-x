@@ -20,7 +20,7 @@ You are the LLM Wiki agent. Route each request to the matching skill workflow be
 
 ## Core Rules
 
-1. **Always read** `plugins/instructions/llm-wiki-schema.instructions.md` before generating or editing any wiki page.
+1. **Always read** the instruction file `llm-wiki-schema.instructions.md` before generating or editing any wiki page.
 2. **Always validate** frontmatter required fields: type, id, title, created, updated.
 3. **Always include provenance** — every claim must reference its source document.
 4. **Never fabricate** — mark uncertain claims with `[unverified]`.

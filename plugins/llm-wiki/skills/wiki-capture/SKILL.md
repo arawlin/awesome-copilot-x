@@ -1,18 +1,18 @@
 ---
 name: wiki-capture
-description: 'Capture knowledge from the current Copilot Chat session — extract entities, concepts, relationships, and decisions, then write structured output to questions_pending/ for human review. Works from ANY workspace by detecting $LLM_WIKI_PATH. Use when user asks to "capture this conversation", "save to wiki", "extract knowledge", or after a significant technical discussion.'
+description: 'Capture knowledge from the current Copilot Chat session — extract entities, concepts, relationships, and decisions, present a detailed candidate summary for human selection, then write only the selected items to questions_pending/ for review. Works from ANY workspace by detecting $LLM_WIKI_PATH. Use when user asks to "capture this conversation", "save to wiki", "extract knowledge", or after a significant technical discussion.'
 argument-hint: "[--scope <current-turn|full-session>]"
 ---
 
 # Wiki Capture — 知识捕获
 
-Extract structured knowledge from the current Chat session and write to `questions_pending/` for human review.
+Extract structured knowledge from the current Chat session, present a detailed candidate summary for human selection, then write only the selected items to `questions_pending/` for review.
 
 ## Prerequisites
 
 - Environment variable `$LLM_WIKI_PATH` must point to the llm-wiki repo.
 - If `$LLM_WIKI_PATH` is not set, fall back to writing to `.wiki-capture/` in the current workspace.
-- Read the instruction file `llm-wiki-schema.instructions.md` for page format. If unavailable, follow the frontmatter template in Step 6 of this skill.
+- Read the instruction file `llm-wiki-schema.instructions.md` for page format. If unavailable, follow the frontmatter template in Step 7 of this skill.
 - Session limits come from `wiki/.wiki-config.yml` (`capture_max_items_per_run`); use the default when the config is absent.
 
 ## Workflow
@@ -35,9 +35,45 @@ Review the conversation and extract:
 
 **Granularity gate (same as `/wiki-ingest`)**: capture a concept as a separate item only if it has standalone retrieval value + is self-contained + is knowledge-not-data. Sub-flows / session-specific details that would never be queried alone → fold into the parent concept or skip; this keeps the pending queue reviewable instead of fragmented.
 
-### Step 3: Self-validate
+### Step 3: Present detailed candidate summary for human selection
 
-For each extracted item:
+Before writing any file, stop and summarize each candidate in enough detail for the human to judge — a bare table is not enough. For every candidate, include:
+
+| Field | Content |
+|-------|---------|
+| 编号 + 类型 + Slug + 标题 | Candidate identity |
+| 一句话摘要 | What knowledge this item captures |
+| 关键要点 | 3–5 bullets of the main claims the page will contain |
+| 置信度 | high / medium / low |
+| 来源 | Which turn or message each claim comes from |
+
+Example:
+
+```
+🧾 候选知识清单（<N> 项）
+
+1. concept / session-scoped-planning / 会话级任务规划（confidence: high）
+   摘要：多步任务「先全局规划、再逐项执行、完成后复盘」的执行方法论
+   - 规划先行：把任务拆成可检查的子项，先列出计划再动手
+   - 单线程推进：同一时间只做一个子项，完成即标记
+   - 复盘驱动：结束后回顾步骤，沉淀为可复用流程
+   来源：第 2 轮「重构 X 模块」→ 第 4 轮确认该方法有效
+
+2. entity / sqlite-vec / SQLite-vec（confidence: medium）
+   摘要：SQLite 的向量检索扩展，用于本地语义搜索
+   - SQLite 官方扩展，嵌入式向量索引 [unverified]
+   来源：第 6 轮提及，会话内未展开验证
+```
+
+Ask: `提取哪些条目？（输入编号如 "1,3,5"、"all" 或 "none"）`
+
+- **Wait for explicit human selection** — never write any file before the user picks items (fail closed).
+- `none` → end the run immediately: no files written, no log update.
+- Only selected candidates continue to Step 4; unselected candidates are discarded.
+
+### Step 4: Self-validate (selected items only)
+
+For each selected item:
 1. **Provenance check**: Every claim must reference a specific message or turn in the conversation.
 2. **Confidence assessment**:
    - `high`: Explicitly stated by user or agreed upon.
@@ -51,15 +87,17 @@ For each extracted item:
 - Mark uncertainty explicitly.
 - Skip trivial chat (greetings, small talk) — only capture substantive knowledge.
 
-### Step 4: Security filter
+### Step 5: Security filter (selected items only)
 
-Before writing, scan extracted content:
+Before writing, scan the selected content:
 - **Credentials**: API keys, passwords, tokens → REJECT.
 - **PII**: Email addresses, phone numbers, ID numbers → REDACT or REJECT.
 - **Internal IPs/hostnames**: → REJECT.
 - Mark sensitivity level in frontmatter: `public` / `internal` / `sensitive`.
 
-### Step 5: Write to target
+### Step 6: Write to target (selected items only)
+
+Write only the items the human selected in Step 3.
 
 **Primary path** (if `$LLM_WIKI_PATH` is set):
 ```
@@ -71,7 +109,7 @@ $LLM_WIKI_PATH/questions_pending/<type>-<slug>.md
 <workspace>/.wiki-capture/<type>-<slug>.md
 ```
 
-### Step 6: Product format
+### Step 7: Product format
 
 Each `questions_pending/*.md` file must include:
 
@@ -93,7 +131,7 @@ related: []
 
 Body section must include a **"与我讨论的内容" (Discussed Content)** section with provenance.
 
-### Step 7: Update activity log
+### Step 8: Update activity log
 
 1. Append operation record to `$LLM_WIKI_PATH/wiki/log.md` (JSON Lines).
 2. Append 1 full entry to `$LLM_WIKI_PATH/wiki/activity.md` (complete history).
@@ -103,5 +141,6 @@ Body section must include a **"与我讨论的内容" (Discussed Content)** sect
 ## Constraints
 
 - Maximum **10 extracted items** per capture run (default; override via `.wiki-config.yml` `capture_max_items_per_run`).
+- Never write files before the human confirms the selection — unselected candidates must not reach `questions_pending/`.
 - Low-confidence items always require human review (never auto-approve).
 - Sensitive items are blocked — do not write to any file.

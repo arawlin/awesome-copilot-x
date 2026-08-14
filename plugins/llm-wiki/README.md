@@ -37,7 +37,8 @@ LLM Wiki 采用 **Human-Gated Compounding Loop**（人机审核循环）：自�
 
 ```mermaid
 flowchart TD
-    A["💬 Copilot Chat 会话<br/>涌现新知识"] -->|"/wiki-capture"| B["📝 questions_pending/<br/>自动生成的知识条目"]
+    A["💬 Copilot Chat 会话<br/>涌现新知识"] -->|"/wiki-capture"| S["🧾 候选详细摘要<br/>（逐项要点 + 来源）"]
+    S -->|"👤 人工圈选"| B["📝 questions_pending/<br/>仅圈选条目落盘"]
     B -->|"/wiki-review"| C{"👤 人工审核"}
     C -->|✅ 批准| D["📋 questions_approved/"]
     C -->|❌ 拒绝| E["🗑️ rejected/<br/>（保留审计线索）"]
@@ -71,7 +72,7 @@ Wiki 的消费方是 **LLM agent**（按需检索进有限上下文窗口），�
 
 | 分类 | 命令 | 功能 | 输入 → 输出 | 适用范围 |
 |------|------|------|------------|----------|
-| 核心 | `/wiki-capture` | 从 Chat 会话提取结构化知识 | Chat 会话 → `questions_pending/` | **任意**工作区 |
+| 核心 | `/wiki-capture` | 从 Chat 会话提取结构化知识（候选详细摘要 → 人工圈选 → 落盘） | Chat 会话 → 候选详细摘要 → `questions_pending/` | **任意**工作区 |
 | 核心 | `/wiki-review` | 人工审核 pending 条目（all/batch/slug/merge 模式），含质量门、synthesis 批准、存量碎片页合并 | `questions_pending/` → `questions_approved/` 或 `rejected/` | `$LLM_WIKI_PATH` 工作区 |
 | 核心 | `/wiki-ingest` | 编译摄入已批准的知识和原始文档（知识地图 + 自包含/大小上限/细节指针） | `questions_approved/` + `raw/` → `wiki/` | `$LLM_WIKI_PATH` 工作区 |
 | 核心 | `/wiki-query` | 查询 Wiki 知识库（知识地图导航 + 细节指针跟随；大库 BM25 预筛脚本），返回带 [[WikiLink]] 引用的综合回答 | 用户问题 → 带引用的答案 | `$LLM_WIKI_PATH` 工作区 |

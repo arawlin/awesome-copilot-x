@@ -1,12 +1,12 @@
 ---
 name: wiki-review
-description: 'Review pending wiki knowledge entries — approve, reject, or revise items in questions_pending/ via three-state file-system state machine, with quality gates (self-containment, size, granularity), synthesis draft approval, and a legacy merge mode for pages violating current granularity rules. Use when user asks to "review wiki changes", "approve pending", or manage the human-gated knowledge workflow.'
+description: 'Review pending session capture documents — approve, reject, or revise items within a single questions_pending/session-*.md via three-state review, with quality gates (self-containment, size, granularity), synthesis draft approval, and a legacy merge mode for pages violating current granularity rules. Use when user asks to "review wiki changes", "approve pending", or manage the human-gated knowledge workflow.'
 argument-hint: "[all|batch|slug <id>]"
 ---
 
 # Wiki Review — 人工审核
 
-Human-gated approval workflow for pending wiki knowledge entries. Uses file-system state machine: `questions_pending/` → `questions_approved/` or `rejected/`.
+Human-gated approval workflow for pending session capture documents (one document per capture run). Review happens **per item inside the document**; the finalized document moves `questions_pending/` → `questions_approved/` or `rejected/`.
 
 ## Prerequisites
 
@@ -27,9 +27,11 @@ Human-gated approval workflow for pending wiki knowledge entries. Uses file-syst
 
 | State | Action | File operation |
 |-------|--------|---------------|
-| **approved** | Accept as-is | `mv questions_pending/<id>.md questions_approved/<id>.md` |
-| **rejected** | Decline with reason | `mv questions_pending/<id>.md rejected/<id>.md` + add `review` frontmatter |
-| **revised** | Approve with edits | Modify in Chat, confirm, then move to `questions_approved/` |
+| **approved** | Every item in the document accepted | `mv questions_pending/<id>.md questions_approved/<id>.md` |
+| **rejected** | All items declined (whole-document reject) | `mv questions_pending/<id>.md rejected/<id>.md` + add `review` frontmatter |
+| **revised** | Approve with edits | Modify items in Chat, confirm, then move to `questions_approved/` |
+
+Item-level decisions are recorded inside the document: rejected items are removed from the body and listed in the `review` frontmatter; the document moves on once every item is resolved.
 
 ## Quality Gate (every reviewed item)
 
@@ -37,11 +39,10 @@ Before approving, verify each item against the LLM-consumption quality rules (sc
 
 | Check | Pass criteria |
 |-------|---------------|
-| **Self-contained** | Pulling this page alone is enough to understand it — no sibling pages required |
-| **Size cap** | Page ≤ ~300 lines / ~4KB |
-| **Granularity** | Concept satisfies all three: standalone retrieval value + self-contained + knowledge not data |
-| **Progressive disclosure** | Page ends with a detail pointer to source page / original document |
-| **Provenance** | Every claim carries a source reference |
+| **Self-contained** | Each item can be understood on its own — no sibling items required |
+| **Size cap** | Session document ≤ 200 lines / ~6KB（schema, Session Capture 节） |
+| **Granularity** | Concept-class items satisfy all three: standalone retrieval value + self-contained + knowledge not data（最终裁决在 ingest） |
+| **Provenance** | Every item carries its session turn/message source |
 
 Items failing any check go to `revised` (edit before approve) or `rejected` (with reason) — never auto-approved.
 
@@ -59,7 +60,7 @@ Items failing any check go to `revised` (edit before approve) or `rejected` (wit
 
 ### Step 1: Load pending queue
 
-List all files in `$LLM_WIKI_PATH/questions_pending/`. Count and categorize:
+List all files in `$LLM_WIKI_PATH/questions_pending/` (one `session-*.md` document per capture run). For each document, read its item sections and confidence levels, then categorize:
 - **High confidence** + **low risk**: Eligible for batch approval.
 - **Medium confidence** + **medium risk**: Standard review.
 - **Low confidence** + **high risk**: Deep review required.
@@ -77,11 +78,11 @@ Present a summary before detailed review:
 Proceed with [all|batch|skip]?
 ```
 
-### Step 3: Review each item
+### Step 3: Review each item within the document
 
-For each pending item, present:
+For each item inside the pending document, present:
 
-1. **Title** and **type** (entity/concept/decision).
+1. **Title** and 类别提示.
 2. **Confidence** level.
 3. **Key claims** (first 3–5 bullet points).
 4. **Provenance** summary.
@@ -89,12 +90,12 @@ For each pending item, present:
 
 #### Batch mode
 
-For low-risk items only, present a summary table:
+For low-risk items only, present a summary table of the items inside the document:
 
-| # | Slug | Title | Confidence |
-|---|------|-------|------------|
-| 1 | entity-foo | Foo | high |
-| 2 | concept-bar | Bar | high |
+| # | Title | Confidence |
+|---|-------|------------|
+| 1 | Foo | high |
+| 2 | Bar | high |
 
 Single confirmation: "Approve all <n> items? [y/n]"
 
@@ -102,23 +103,29 @@ Single confirmation: "Approve all <n> items? [y/n]"
 
 When user requests edits:
 1. User provides edit instruction (e.g., "change date to 2022").
-2. Apply the edit to the pending file.
+2. Apply the edit to the item in the pending document.
 3. Show the diff.
 4. Confirm: "Apply this change? [y/n]"
-5. If yes, move to `questions_approved/`. Record edit in `review.changes_requested`.
+5. If yes, keep the item in the document and record the edit in `review.changes_requested`.
 
 ### Step 4: Record review decisions
 
-For each reviewed item, add `review` field to frontmatter:
+Record decisions in the document's frontmatter — per item:
 
 ```yaml
 review:
-  status: approved | rejected | revised
+  status: approved | rejected | revised   # whole-document status
   reviewer: "<user>"
   reviewed_at: <YYYY-MM-DD>
-  reason: "<reason for rejection>"
-  changes_requested: "<edit summary>"
+  items:
+    - { item: 1, status: approved }
+    - { item: 2, status: rejected, reason: "<reason>" }
+    - { item: 3, status: revised, changes_requested: "<edit summary>" }
+  rejected:
+    - "<item title> — <reason>"
 ```
+
+Rejected items are removed from the document body before the document moves to `questions_approved/`.
 
 ### Step 5: Freshness check during review
 
@@ -145,6 +152,8 @@ Audit existing pages that violate current granularity rules (e.g., over-split su
 > Never merge without user confirmation — this is a destructive restructuring.
 
 ## Rejected Item Retention
+
+Whole-document rejection moves the document to `rejected/`; per-item rejections are recorded in the document's `review` frontmatter and the item is removed from the body.
 
 | Reason | Retention | Archive path |
 |--------|-----------|-------------|

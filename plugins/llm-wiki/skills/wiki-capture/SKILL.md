@@ -1,12 +1,12 @@
 ---
 name: wiki-capture
-description: 'Capture knowledge from the current Copilot Chat session — extract entities, concepts, relationships, and decisions, present a detailed candidate summary for human selection, then write only the selected items to questions_pending/ for review. Works from ANY workspace by detecting $LLM_WIKI_PATH. Use when user asks to "capture this conversation", "save to wiki", "extract knowledge", or after a significant technical discussion.'
+description: 'Capture knowledge from the current Copilot Chat session into a single session document — extract entities and concepts without type-splitting, present a detailed candidate summary for human selection, then write only the selected items to questions_pending/session-<date>-<slug>.md for review. Type-splitting and page assignment happen at /wiki-ingest. Works from ANY workspace by detecting $LLM_WIKI_PATH. Use when user asks to "capture this conversation", "save to wiki", "extract knowledge", or after a significant technical discussion.'
 argument-hint: "[--scope <current-turn|full-session>]"
 ---
 
 # Wiki Capture — 知识捕获
 
-Extract structured knowledge from the current Chat session, present a detailed candidate summary for human selection, then write only the selected items to `questions_pending/` for review.
+Extract structured knowledge from the current Chat session into ONE session document — no type-splitting here. Present a detailed candidate summary for human selection, then write only the selected items into the single document for review. Entity/concept classification and page assignment happen at `/wiki-ingest`, which owns the global context (dedup, granularity, existing pages) that capture lacks.
 
 ## Prerequisites
 
@@ -22,16 +22,17 @@ Extract structured knowledge from the current Chat session, present a detailed c
 - `--scope current-turn` (default): Extract from the current conversation turn only.
 - `--scope full-session`: Extract from the entire session history.
 
-### Step 2: Extract knowledge (single-pass + inline self-validation)
+### Step 2: Extract candidate knowledge (single-pass, no type-splitting)
 
-Review the conversation and extract:
+Review the conversation and extract candidates — entities, concepts — **without assigning page types**. Type-splitting belongs to `/wiki-ingest`, which owns the global context (dedup, granularity, existing pages):
 
-| Category | Examples | Output format |
-|----------|----------|---------------|
-| **Entities** | Tools, frameworks, libraries, companies, people, protocols | `questions_pending/entity-<slug>.md` |
-| **Concepts** | Patterns, methodologies, algorithms, architectural decisions | `questions_pending/concept-<slug>.md` |
+| Category | Examples | Final home (decided by `/wiki-ingest`) |
+|----------|----------|----------------------------------------|
+| **Entities** | Tools, frameworks, libraries, companies, people, protocols | `wiki/entities/<slug>.md` |
+| **Concepts** | Patterns, methodologies, algorithms, rationale (why X over Y) | `wiki/concepts/<slug>.md`（粒度三条件，不达标并入父页 `#锚点`） |
 | **Relations** | "X uses Y", "X is a type of Z" | Embedded in entity/concept pages as `related` |
-| **Decisions** | "We chose X over Y because Z" | `questions_pending/decision-<slug>.md` |
+
+When the conversation contains a trade-off ("We chose X over Y because Z"), fold the rationale into the related concept candidate — never a separate decision candidate.
 
 **Granularity gate (same as `/wiki-ingest`)**: capture a concept as a separate item only if it has standalone retrieval value + is self-contained + is knowledge-not-data. Sub-flows / session-specific details that would never be queried alone → fold into the parent concept or skip; this keeps the pending queue reviewable instead of fragmented.
 
@@ -41,7 +42,7 @@ Before writing any file, stop and summarize each candidate in enough detail for 
 
 | Field | Content |
 |-------|---------|
-| 编号 + 类型 + Slug + 标题 | Candidate identity |
+| 编号 + 类别提示 + Slug + 标题 | Candidate identity — 类别仅为提示，最终归页由 /wiki-ingest 决定 |
 | 一句话摘要 | What knowledge this item captures |
 | 关键要点 | 3–5 bullets of the main claims the page will contain |
 | 置信度 | high / medium / low |
@@ -67,6 +68,7 @@ Example:
 
 Ask: `提取哪些条目？（输入编号如 "1,3,5"、"all" 或 "none"）`
 
+- 类别仅为提示 — final type assignment is made by `/wiki-ingest`, not here.
 - **Wait for explicit human selection** — never write any file before the user picks items (fail closed).
 - `none` → end the run immediately: no files written, no log update.
 - Only selected candidates continue to Step 4; unselected candidates are discarded.
@@ -95,41 +97,57 @@ Before writing, scan the selected content:
 - **Internal IPs/hostnames**: → REJECT.
 - Mark sensitivity level in frontmatter: `public` / `internal` / `sensitive`.
 
-### Step 6: Write to target (selected items only)
+### Step 6: Write ONE session document (selected items only)
 
-Write only the items the human selected in Step 3.
+Write the selected items into a single session document — never split them into per-type files.
 
 **Primary path** (if `$LLM_WIKI_PATH` is set):
 ```
-$LLM_WIKI_PATH/questions_pending/<type>-<slug>.md
+$LLM_WIKI_PATH/questions_pending/session-<date>-<slug>.md
 ```
 
 **Fallback path** (if `$LLM_WIKI_PATH` is not set):
 ```
-<workspace>/.wiki-capture/<type>-<slug>.md
+<workspace>/.wiki-capture/session-<date>-<slug>.md
 ```
 
 ### Step 7: Product format
 
-Each `questions_pending/*.md` file must include:
+The session document follows the schema section「Session Capture（会话捕获文档）」. Frontmatter:
 
 ```yaml
 ---
-type: entity | concept | decision
-id: <slug>
-title: "<title>"
+type: session
+id: session-<YYYYMMDD>-<slug>
+title: "<会话主题>"
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 tags: []
 captured_from: "<session-context>"
 captured_at: <ISO timestamp>
-confidence: high | medium | low
 sensitivity: public | internal | sensitive
 related: []
 ---
 ```
 
-Body section must include a **"与我讨论的内容" (Discussed Content)** section with provenance.
+Body:
+
+```markdown
+## 候选知识清单
+
+### 1. <标题>（confidence: high）
+
+摘要：<一句话>
+
+关键要点：
+- <要点 1>
+- <要点 2>
+
+来源：<第几轮 / 哪条消息>
+```
+
+- One `###` section per candidate item.
+- Every item must include its 「与我讨论的内容」 information (key points + provenance).
 
 ### Step 8: Update activity log
 
@@ -141,6 +159,7 @@ Body section must include a **"与我讨论的内容" (Discussed Content)** sect
 ## Constraints
 
 - Maximum **10 extracted items** per capture run (default; override via `.wiki-config.yml` `capture_max_items_per_run`).
+- **One session document per capture run** — never split items into per-type files (`entity-*` / `concept-*` are retired).
 - Never write files before the human confirms the selection — unselected candidates must not reach `questions_pending/`.
 - Low-confidence items always require human review (never auto-approve).
 - Sensitive items are blocked — do not write to any file.

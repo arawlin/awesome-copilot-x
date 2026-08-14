@@ -1,12 +1,12 @@
 ---
 name: wiki-ingest
-description: 'Ingest raw documents into the LLM Wiki — read files from raw/, build a small llms.txt-style document knowledge map, extract self-contained entities and concepts into atomic wiki pages (sources/entities/concepts) with mandatory provenance and LLM-consumption quality rules (self-containment, size caps, progressive disclosure). Use when user asks to "ingest documents", "add to wiki", "process raw files", or build the knowledge base for AI agents.'
+description: 'Ingest approved content into the LLM Wiki — read raw/ documents (knowledge map + entity/concept extraction) and approved session capture documents from questions_approved/ (type-splitting + dedup), producing self-contained wiki pages (sources/entities/concepts) with mandatory provenance and LLM-consumption quality rules (self-containment, size caps, progressive disclosure). Use when user asks to "ingest documents", "add to wiki", "process raw files", or build the knowledge base for AI agents.'
 argument-hint: "[--source <file>] [--all]"
 ---
 
 # Wiki Ingest — 文档摄入
 
-Read documents from `raw/`, extract knowledge, and generate structured wiki pages under `wiki/sources/`, `wiki/entities/`, and `wiki/concepts/`. The wiki is consumed by **LLM agents**, not human readers: agents retrieve pages on demand into a finite context window, so every page must be self-contained and every index must stay small and high-signal. Extracted pages are leaf nodes of a lightweight document knowledge map — never isolated fragments, never bloated megapages.
+Read documents from `raw/` and approved session capture documents from `questions_approved/`, then generate structured wiki pages under `wiki/sources/`, `wiki/entities/`, and `wiki/concepts/`. Session documents are type-split here (entity / concept) — capture deliberately does not classify, because type assignment needs the global dedup and granularity context this stage owns. The wiki is consumed by **LLM agents**, not human readers: agents retrieve pages on demand into a finite context window, so every page must be self-contained and every index must stay small and high-signal. Extracted pages are leaf nodes of a lightweight document knowledge map — never isolated fragments, never bloated megapages.
 
 ## When to Use This Skill
 
@@ -144,9 +144,24 @@ Examples:
 6. Update `wiki/index.md` — the **whole-wiki llms.txt**: append new pages in the standard llms.txt line format `- [title](<type>/<id>.md): one-line description` (see schema, Index 节), grouped by type/theme, with an `Optional` section for low-priority links. The split threshold is a **1M-token context window**: only when the index exceeds 1M tokens do you split it into topic-level index pages (MOC-style).
 7. Append operation record to `wiki/log.md` in JSON Lines format.
 
+## Session Capture Ingestion（会话文档摄入）
+
+Second input source, after raw documents: `questions_approved/session-*.md` (one document per capture run, format per schema「Session Capture」节). This stage owns the type-splitting that capture deliberately skipped.
+
+For each session document:
+
+1. **Type-split each item**:
+   - **Entity** (named, identifiable thing) → `wiki/entities/<slug>.md` (relaxed standard, Step 3).
+   - **Concept** (pattern/methodology) → `wiki/concepts/<slug>.md` only if the three-condition granularity gate passes; sub-flows fold into the parent page as a `## section` (`#锚点`).
+   - Rationale content ("we chose X over Y because Z") is part of a concept's 核心思想 — it arrives as a concept candidate, never a separate class.
+2. **Dedup check** per item — same three-band table as Step 5 (AUTO-UPDATE / MERGE / SUGGEST-MERGE / CREATE).
+3. **Security filter** per Step 6.
+4. **Provenance**: every claim in the final page must carry the session document id (`captured_from`) — keep the trail from session → page.
+5. Update `wiki/index.md` and `wiki/log.md` (Step 7).
+
 ### Page Limits
 
-- Maximum **15 pages** per ingest run (1 source + up to 7 entity + up to 7 concept) — default value; override via `wiki/.wiki-config.yml` (`ingest_max_pages_per_run`).
+- Maximum **15 pages** per ingest run (1 source + up to 7 entity + up to 7 concept) — default value; override via `wiki/.wiki-config.yml` (`ingest_max_pages_per_run`). Session-document items count against this same limit.
 - If a document would generate more, first re-apply Step 3 (drop data tables, merge sub-flows with no standalone retrieval value); if the remaining pages are all self-contained with distinct retrieval value, split the ingest into multiple sessions rather than forcing merges.
 
 ## Gotchas

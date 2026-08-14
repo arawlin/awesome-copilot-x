@@ -39,7 +39,7 @@ Extract additional entities and concepts from documentation. Merge/update Phase 
 
 **Sources**: High-engagement Issues (👍 ≥ 5)
 
-Extract pain points, feature requests, and workarounds as concept/decision pages.
+Extract pain points, feature requests, and workarounds as concepts.
 
 **Target**: Additional 3–8 pages.
 
@@ -47,7 +47,7 @@ Extract pain points, feature requests, and workarounds as concept/decision pages
 
 **Sources**: Merged PRs (title + description)
 
-Extract architectural decisions and rationale.
+Extract architectural decisions and rationale as part of the related concept pages' content (never standalone pages).
 
 **Target**: Additional 2–5 pages.
 
@@ -74,7 +74,7 @@ Proceed with [A|AB|ABC|full]?
 For each phase, use the same extraction logic as `/wiki-ingest`, **including its granularity and quality conventions**:
 1. Read source documents.
 2. Build a document knowledge map (small, high-signal; see `/wiki-ingest` Step 2).
-3. Extract entities, concepts, decisions — apply the granularity rules: concepts only with standalone retrieval value + self-contained + knowledge-not-data; sub-flows merge into parent pages (`#锚点`).
+3. Extract entities, concepts, decisions — apply the granularity rules: concepts only with standalone retrieval value + self-contained + knowledge-not-data; sub-flows merge into parent pages (`#锚点`); decisions/rationale merge into the related concept pages' content (never standalone pages).
 4. Generate wiki pages with provenance, respecting page quality hard standards (self-contained, ≤ ~300 lines / ~4KB, trailing detail pointer).
 5. Self-validate (confidence levels).
 6. Security filter.

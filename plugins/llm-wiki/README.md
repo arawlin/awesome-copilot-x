@@ -38,14 +38,14 @@ LLM Wiki 采用 **Human-Gated Compounding Loop**（人机审核循环）：自�
 ```mermaid
 flowchart TD
     A["💬 Copilot Chat 会话<br/>涌现新知识"] -->|"/wiki-capture"| S["🧾 候选详细摘要<br/>（逐项要点 + 来源）"]
-    S -->|"👤 人工圈选"| B["📝 questions_pending/<br/>仅圈选条目落盘"]
-    B -->|"/wiki-review"| C{"👤 人工审核"}
+    S -->|"👤 人工圈选"| B["📝 questions_pending/<br/>session-*.md 单文档"]
+    B -->|"/wiki-review"| C{"👤 人工审核<br/>逐条目裁决"}
     C -->|✅ 批准| D["📋 questions_approved/"]
     C -->|❌ 拒绝| E["🗑️ rejected/<br/>（保留审计线索）"]
     C -->|✏️ 修订| F["Chat 内交互式修订"]
     F --> D
 
-    G["📄 raw/<br/>原始文档（PDF/文章）"] -->|"/wiki-ingest"| H["⚙️ 编译摄入"]
+    G["📄 raw/<br/>原始文档（PDF/文章）"] -->|"/wiki-ingest"| H["⚙️ 编译摄入<br/>类型拆分 + 去重"]
     D --> H
 
     H --> I["📚 wiki/<br/>entities/ + concepts/ + sources/"]
@@ -67,14 +67,15 @@ Wiki 的消费方是 **LLM agent**（按需检索进有限上下文窗口），�
 - **页面硬标准**：每页自包含（单独拉取可完整理解）+ ≤300 行/约 4KB + 页末细节指针（progressive disclosure → 原始文档/上游）。
 - **索引**：source 页必含「知识地图」（文档级 llms.txt，小而高信号）；`wiki/index.md` 为全库 llms.txt（llms.txt 标准行格式 `- [标题](路径): 描述`，小而分层，超窗口拆主题级 MOC）。
 - **synthesis**：跨文档主题综合（draft → `/wiki-review` 人工批准），不复述单文档。
+- **捕获与结构化分离**：`/wiki-capture` 产出单份 session 文档（不拆类型），类型拆分与归页在 `/wiki-ingest`（拥有去重/粒度的全局上下文）；取舍理由（why X over Y）并入相关 concept 页内容，不单独成页。
 
 ## LLM Wiki Skills 速览
 
 | 分类 | 命令 | 功能 | 输入 → 输出 | 适用范围 |
 |------|------|------|------------|----------|
-| 核心 | `/wiki-capture` | 从 Chat 会话提取结构化知识（候选详细摘要 → 人工圈选 → 落盘） | Chat 会话 → 候选详细摘要 → `questions_pending/` | **任意**工作区 |
-| 核心 | `/wiki-review` | 人工审核 pending 条目（all/batch/slug/merge 模式），含质量门、synthesis 批准、存量碎片页合并 | `questions_pending/` → `questions_approved/` 或 `rejected/` | `$LLM_WIKI_PATH` 工作区 |
-| 核心 | `/wiki-ingest` | 编译摄入已批准的知识和原始文档（知识地图 + 自包含/大小上限/细节指针） | `questions_approved/` + `raw/` → `wiki/` | `$LLM_WIKI_PATH` 工作区 |
+| 核心 | `/wiki-capture` | 从 Chat 会话提取结构化知识为**单份 session 文档**（不拆类型；候选详细摘要 → 人工圈选 → 落盘） | Chat 会话 → `questions_pending/session-*.md` | **任意**工作区 |
+| 核心 | `/wiki-review` | 人工审核 pending session 文档——按条目 approve/reject/revise（all/batch/slug/merge 模式），含质量门、synthesis 批准、存量碎片页合并 | `questions_pending/session-*.md` → `questions_approved/` 或 `rejected/` | `$LLM_WIKI_PATH` 工作区 |
+| 核心 | `/wiki-ingest` | 编译摄入已批准内容：session 文档类型拆分（entity/concept）+ 去重；raw 文档（知识地图 + 自包含/大小上限/细节指针） | `questions_approved/` + `raw/` → `wiki/` | `$LLM_WIKI_PATH` 工作区 |
 | 核心 | `/wiki-query` | 查询 Wiki 知识库（知识地图导航 + 细节指针跟随；大库 BM25 预筛脚本），返回带 [[WikiLink]] 引用的综合回答 | 用户问题 → 带引用的答案 | `$LLM_WIKI_PATH` 工作区 |
 | 核心 | `/wiki-lint` | 健康检查：矛盾、孤立页、过期内容、格式违规 + LLM 消费质量检查（大小上限/知识地图/细节指针/index） | `wiki/` → `lint_pending/` | `$LLM_WIKI_PATH` 工作区 |
 | 辅助 | `/wiki-sync` | 直接提交并推送到 origin/main（单人简化，无分支/checkpoint 机制） | 本地变更 → 远程仓库 | `$LLM_WIKI_PATH` 工作区 |

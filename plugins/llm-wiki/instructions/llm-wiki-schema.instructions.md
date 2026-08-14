@@ -244,6 +244,44 @@ schema_version: "0.1"
 - **agent 检索阈值**：索引超过约 20K token 时，查询改用 BM25 预筛（wiki-query skill 自带脚本），不再整读索引。
 - **拆分阈值**：全库索引超过约 1M token 上下文窗口时，拆出主题级索引页（MOC），根索引只保留指针。
 
+## Session Capture（会话捕获文档）
+
+`/wiki-capture` 的产出物：每次捕获运行一份文档 `questions_pending/session-<date>-<slug>.md`（无 `$LLM_WIKI_PATH` 时回退 `<workspace>/.wiki-capture/`）。**捕获阶段不做类型拆分**——entity/concept 归类由 `/wiki-ingest` 决定。
+
+```yaml
+---
+type: session
+id: session-<YYYYMMDD>-<slug>
+title: "<会话主题>"
+created: <YYYY-MM-DD>
+updated: <YYYY-MM-DD>
+tags: []
+captured_from: "<session-context>"
+captured_at: <ISO timestamp>
+sensitivity: public | internal | sensitive
+related: []
+---
+```
+
+正文结构（每个候选项一个 `###` 小节）：
+
+```markdown
+## 候选知识清单
+
+### 1. <标题>（confidence: high）
+
+摘要：<一句话>
+
+关键要点：
+- <要点 1>
+- <要点 2>
+
+来源：<第几轮 / 哪条消息>
+```
+
+- **大小上限**：session 文档 ≤ 200 行 / 约 6KB；超出则压缩要点或拆多次捕获。
+- `review` 字段由 `/wiki-review` 填写（逐条目 approve/reject/revise）；被拒条目从正文移除并记录理由。
+
 ## 运行参数（.wiki-config.yml）
 
 `wiki/.wiki-config.yml` 是全部可调阈值的单一事实源（policy as configuration）。Skill 使用下方默认值，配置存在时以配置为准：

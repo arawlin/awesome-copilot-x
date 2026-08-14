@@ -1,6 +1,6 @@
 ---
 name: wiki-review
-description: Review pending wiki knowledge entries — approve, reject, or revise items in questions_pending/ via three-state file-system state machine. Use when user asks to "review wiki changes", "approve pending", or manage the human-gated knowledge workflow.
+description: Review pending wiki knowledge entries — approve, reject, or revise items in questions_pending/ via three-state file-system state machine, with quality gates (self-containment, size, granularity), synthesis draft approval, and a legacy merge mode for pages violating current granularity rules. Use when user asks to "review wiki changes", "approve pending", or manage the human-gated knowledge workflow.
 argument-hint: "[all|batch|slug <id>]"
 ---
 
@@ -20,6 +20,7 @@ Human-gated approval workflow for pending wiki knowledge entries. Uses file-syst
 | **All** | `all` | Review every pending item one by one |
 | **Batch** | `batch` | Quick-approve all low-risk items at once |
 | **Single** | `slug <id>` | Review one specific pending item |
+| **Legacy merge** | `merge` | Audit existing pages against current granularity rules and propose merges (e.g., over-split sub-concepts) |
 
 ## Review States
 
@@ -28,6 +29,30 @@ Human-gated approval workflow for pending wiki knowledge entries. Uses file-syst
 | **approved** | Accept as-is | `mv questions_pending/<id>.md questions_approved/<id>.md` |
 | **rejected** | Decline with reason | `mv questions_pending/<id>.md rejected/<id>.md` + add `review` frontmatter |
 | **revised** | Approve with edits | Modify in Chat, confirm, then move to `questions_approved/` |
+
+## Quality Gate (every reviewed item)
+
+Before approving, verify each item against the LLM-consumption quality rules (schema):
+
+| Check | Pass criteria |
+|-------|---------------|
+| **Self-contained** | Pulling this page alone is enough to understand it — no sibling pages required |
+| **Size cap** | Page ≤ ~300 lines / ~4KB |
+| **Granularity** | Concept satisfies all three: standalone retrieval value + self-contained + knowledge not data |
+| **Progressive disclosure** | Page ends with a detail pointer to source page / original document |
+| **Provenance** | Every claim carries a source reference |
+
+Items failing any check go to `revised` (edit before approve) or `rejected` (with reason) — never auto-approved.
+
+## Synthesis Draft Approval
+
+`wiki/synthesis/` drafts (created by `/wiki-ingest` with `status: draft`) require approval here:
+
+1. Read the draft page.
+2. Verify it answers a **cross-document** question (spans multiple source pages) — not a single-document restatement (that belongs in the knowledge map).
+3. Verify claims carry provenance.
+4. On approval, set frontmatter: `status: active`, `approved_by: "<user>"`, `approved_at: <YYYY-MM-DD>`. Move any `questions_pending/synthesis-*.md` to `questions_approved/`.
+5. Log the approval in `wiki/log.md` and `wiki/activity.md`.
 
 ## Workflow
 
@@ -106,6 +131,17 @@ Before approving, check if any referenced source pages have been updated since t
 2. Append 1 full entry to `$LLM_WIKI_PATH/wiki/activity.md` (complete history).
 
 > 不再写 user memory（wiki-activity.md 已移除）——状态按需从 log.md / questions_pending/ 派生。
+
+## Legacy Merge Mode
+
+Audit existing pages that violate current granularity rules (e.g., over-split sub-concepts like `binance-api-authentication` + `binance-request-signing-payload`):
+
+1. **Scan** `wiki/entities/` and `wiki/concepts/` for candidate groups: pages with heavy `related` overlap, sub-flow pages never queried alone, or pages exceeding the size cap.
+2. **Propose merges** as a table: target page (parent) + candidate pages + merge rationale + how provenance is preserved (keep both `sources` lists).
+3. Present for user confirmation: `[y/n/edit]`.
+4. On approval, merge content into the parent page (sub-flows become `## sections`), **delete the absorbed pages outright (no redirects)**, then fix any broken `[[WikiLink]]` references to the removed pages, update `related`, `wiki/index.md`, `wiki/log.md`, and re-run lint.
+
+> Never merge without user confirmation — this is a destructive restructuring.
 
 ## Rejected Item Retention
 

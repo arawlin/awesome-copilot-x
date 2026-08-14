@@ -71,12 +71,15 @@ Proceed with [A|AB|ABC|full]?
 
 ### Step 2: Execute extraction (phase by phase)
 
-For each phase, use the same extraction logic as `/wiki-ingest`:
+For each phase, use the same extraction logic as `/wiki-ingest`, **including its granularity and quality conventions**:
 1. Read source documents.
-2. Extract entities, concepts, decisions.
-3. Generate wiki pages with provenance.
-4. Self-validate (confidence levels).
-5. Security filter.
+2. Build a document knowledge map (small, high-signal; see `/wiki-ingest` Step 2).
+3. Extract entities, concepts, decisions — apply the granularity rules: concepts only with standalone retrieval value + self-contained + knowledge-not-data; sub-flows merge into parent pages (`#锚点`).
+4. Generate wiki pages with provenance, respecting page quality hard standards (self-contained, ≤ ~300 lines / ~4KB, trailing detail pointer).
+5. Self-validate (confidence levels).
+6. Security filter.
+
+Phase A page targets (3–6 entity + 3–6 concept) are upper bounds, not quotas — do not over-split to hit them.
 
 ### Step 3: Batch confirmation
 

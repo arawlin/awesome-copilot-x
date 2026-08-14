@@ -32,6 +32,8 @@ Review the conversation and extract:
 | **Relations** | "X uses Y", "X is a type of Z" | Embedded in entity/concept pages as `related` |
 | **Decisions** | "We chose X over Y because Z" | `questions_pending/decision-<slug>.md` |
 
+**Granularity gate (same as `/wiki-ingest`)**: capture a concept as a separate item only if it has standalone retrieval value + is self-contained + is knowledge-not-data. Sub-flows / session-specific details that would never be queried alone → fold into the parent concept or skip; this keeps the pending queue reviewable instead of fragmented.
+
 ### Step 3: Self-validate
 
 For each extracted item:

@@ -1,6 +1,6 @@
 ---
 name: wiki-lint
-description: Run health checks on the LLM Wiki — detect contradictions, orphan pages, stale content, format violations. Output issues to lint_pending/ for human review, never directly modify pages. Use when user asks to "check wiki health", "lint wiki", "find issues", or audit knowledge base quality.
+description: Run health checks on the LLM Wiki — detect contradictions, orphan pages, stale content, format violations, and LLM-consumption issues (oversized pages, missing knowledge maps, missing detail pointers, oversized index). Output issues to lint_pending/ for human review, never directly modify pages. Use when user asks to "check wiki health", "lint wiki", "find issues", or audit knowledge base quality.
 argument-hint: "[--scope <all|stale|orphans|contradictions|format>]"
 ---
 
@@ -61,6 +61,19 @@ Check every page against schema requirements:
 - **Invalid status values**: Must be one of `draft | active | stale | contradicted | archived`.
 - **Broken WikiLinks**: Links pointing to non-existent pages.
 - **Schema version**: Pages with `schema_version` below global version.
+
+### 5. LLM-Consumption Quality Checks
+
+Deterministic structural checks aligned with the LLM-consumption rules (schema: size caps, knowledge map, progressive disclosure, small indexes). Semantic judgment (self-containment, granularity) stays in `/wiki-review` — lint only flags what is machine-checkable.
+
+| Check | Condition → lint report |
+|-------|------------------------|
+| Page size cap | Page > ~300 lines or > ~4KB → `oversize-<id>.md` |
+| Missing knowledge map | Source page has no `## 知识地图` section → `missing-knowledge-map-<id>.md` |
+| Bloated knowledge map | Knowledge map section > ~80 lines → `bloated-knowledge-map-<id>.md` |
+| Missing raw-document query block | Source page lacks `## 原始文档查询` → `missing-raw-query-<id>.md` |
+| Missing detail pointer | Entity/concept page has no trailing detail pointer → `missing-detail-pointer-<id>.md` |
+| Oversized index | `wiki/index.md` > ~20K tokens → `index-oversized.md` (suggest topic-level MOC split) |
 
 ## Output
 

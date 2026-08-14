@@ -25,9 +25,10 @@ Read `$LLM_WIKI_PATH/wiki/index.md` to get the full page directory. Parse:
 
 Based on the user's question, identify candidate pages:
 
-1. **Keyword match**: Match question terms against page titles, tags, and IDs.
-2. **Semantic relevance**: Prefer pages whose title/tags overlap with question domain.
-3. **Selection budget**: Select at most **10–15 pages** to stay within token budget (target: 1,500–12,000 tokens for page content).
+1. **Index scan**: Read `wiki/index.md` (whole-wiki llms.txt) — match question terms against page titles, tags, and IDs.
+2. **Knowledge map navigation**: For the matching domain, read the relevant `sources/` page's `## 知识地图` to locate the exact knowledge block (and its home page) instead of guessing from titles.
+3. **Semantic relevance**: Prefer pages whose title/tags overlap with question domain.
+4. **Selection budget**: Select at most **10–15 pages** to stay within token budget (target: 1,500–12,000 tokens for page content).
 
 ### Step 2.5: Check source page for raw fallback instruction
 
@@ -44,6 +45,8 @@ Read each selected page fully from `wiki/<type>/<id>.md`. Prioritize:
 - `entities/` pages for factual queries.
 - `concepts/` pages for explanatory queries.
 - `sources/` pages for provenance lookups.
+
+**Follow detail pointers (progressive disclosure)**: if the selected page's answer needs reference-level detail (parameters, exact fields), follow the page's trailing detail pointer to its source page / original document instead of guessing or fetching unrelated pages. If a selected page is not self-contained, follow its links to fill the missing context.
 
 ### Step 4: Synthesize answer
 

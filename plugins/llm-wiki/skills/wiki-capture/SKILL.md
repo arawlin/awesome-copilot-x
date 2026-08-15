@@ -1,6 +1,6 @@
 ---
 name: wiki-capture
-description: 'Capture knowledge from the current Copilot Chat session into a single session document — extract entities and concepts without type-splitting, present a detailed candidate summary for human selection, then write only the selected items to questions_pending/session-<date>-<slug>.md for review. Type-splitting and page assignment happen at /wiki-ingest. Works from ANY workspace by detecting $LLM_WIKI_PATH. Use when user asks to "capture this conversation", "save to wiki", "extract knowledge", or after a significant technical discussion.'
+description: 'Capture knowledge from the current Copilot Chat session into a single session document — extract reusable knowledge as an unclassified summary, present a detailed candidate summary for human selection, then write only the selected items to questions_pending/session-<date>-<slug>.md for review. Type-splitting and page assignment happen at /wiki-ingest. Works from ANY workspace by detecting $LLM_WIKI_PATH. Use when user asks to "capture this conversation", "save to wiki", "extract knowledge", or after a significant technical discussion.'
 argument-hint: "[--scope <current-turn|full-session>]"
 ---
 
@@ -22,19 +22,16 @@ Extract structured knowledge from the current Chat session into ONE session docu
 - `--scope current-turn` (default): Extract from the current conversation turn only.
 - `--scope full-session`: Extract from the entire session history.
 
-### Step 2: Extract candidate knowledge (single-pass, no type-splitting)
+### Step 2: Extract candidate knowledge (single-pass, unclassified)
 
-Review the conversation and extract candidates — entities, concepts — **without assigning page types**. Type-splitting belongs to `/wiki-ingest`, which owns the global context (dedup, granularity, existing pages):
+Review the conversation and extract **reusable knowledge as an undifferentiated summary** — do NOT classify items as entity or concept. Type classification and page assignment belong to `/wiki-ingest`, which owns the global context (dedup, granularity, existing pages) that capture lacks.
 
-| Category | Examples | Final home (decided by `/wiki-ingest`) |
-|----------|----------|----------------------------------------|
-| **Entities** | Tools, frameworks, libraries, companies, people, protocols | `wiki/entities/<slug>.md` |
-| **Concepts** | Patterns, methodologies, algorithms, rationale (why X over Y) | `wiki/concepts/<slug>.md`（粒度三条件，不达标并入父页 `#锚点`） |
-| **Relations** | "X uses Y", "X is a type of Z" | Embedded in entity/concept pages as `related` |
+What to look for (extraction signals, not categories):
+- **Named, identifiable things** (tools, frameworks, companies, people, protocols) — future cross-document reference anchors.
+- **Reusable patterns, methodologies, principles** — including trade-off rationale ("We chose X over Y because Z").
+- **Explicit relations** ("X uses Y", "X is a type of Z") — recorded inline with the related item, never a separate candidate.
 
-When the conversation contains a trade-off ("We chose X over Y because Z"), fold the rationale into the related concept candidate — never a separate decision candidate.
-
-**Granularity gate (same as `/wiki-ingest`)**: capture a concept as a separate item only if it has standalone retrieval value + is self-contained + is knowledge-not-data. Sub-flows / session-specific details that would never be queried alone → fold into the parent concept or skip; this keeps the pending queue reviewable instead of fragmented.
+**Granularity gate (worth judgment, not type judgment)**: capture an item only if it has standalone retrieval value + is self-contained + is knowledge-not-data. Sub-flows / session-specific details that would never be queried alone → fold into the parent item or skip; this keeps the pending queue reviewable instead of fragmented.
 
 ### Step 3: Present detailed candidate summary for human selection
 
@@ -42,7 +39,7 @@ Before writing any file, stop and summarize each candidate in enough detail for 
 
 | Field | Content |
 |-------|---------|
-| 编号 + 类别提示 + Slug + 标题 | Candidate identity — 类别仅为提示，最终归页由 /wiki-ingest 决定 |
+| 编号 + Slug + 标题 | Candidate identity |
 | 一句话摘要 | What knowledge this item captures |
 | 关键要点 | 3–5 bullets of the main claims the page will contain |
 | 置信度 | high / medium / low |
@@ -53,14 +50,14 @@ Example:
 ```
 🧾 候选知识清单（<N> 项）
 
-1. concept / session-scoped-planning / 会话级任务规划（confidence: high）
+1. session-scoped-planning / 会话级任务规划（confidence: high）
    摘要：多步任务「先全局规划、再逐项执行、完成后复盘」的执行方法论
    - 规划先行：把任务拆成可检查的子项，先列出计划再动手
    - 单线程推进：同一时间只做一个子项，完成即标记
    - 复盘驱动：结束后回顾步骤，沉淀为可复用流程
    来源：第 2 轮「重构 X 模块」→ 第 4 轮确认该方法有效
 
-2. entity / sqlite-vec / SQLite-vec（confidence: medium）
+2. sqlite-vec / SQLite-vec（confidence: medium）
    摘要：SQLite 的向量检索扩展，用于本地语义搜索
    - SQLite 官方扩展，嵌入式向量索引 [unverified]
    来源：第 6 轮提及，会话内未展开验证
@@ -68,7 +65,6 @@ Example:
 
 Ask: `提取哪些条目？（输入编号如 "1,3,5"、"all" 或 "none"）`
 
-- 类别仅为提示 — final type assignment is made by `/wiki-ingest`, not here.
 - **Wait for explicit human selection** — never write any file before the user picks items (fail closed).
 - `none` → end the run immediately: no files written, no log update.
 - Only selected candidates continue to Step 4; unselected candidates are discarded.

@@ -82,7 +82,7 @@ Proceed with [all|batch|skip]?
 
 For each item inside the pending document, present:
 
-1. **Title** and 类别提示.
+1. **Title**.
 2. **Confidence** level.
 3. **Key claims** (first 3–5 bullet points).
 4. **Provenance** summary.

@@ -8,6 +8,12 @@ argument-hint: "[--scope <all|stale|orphans|contradictions|format>]"
 
 Audit the LLM Wiki for quality issues. All findings go to `lint_pending/` — **never modify wiki pages directly**.
 
+## When to Use This Skill
+
+- User asks to "check wiki health", "lint wiki", "find issues", or audit knowledge base quality
+- As a periodic health check, or after `/wiki-ingest` to catch structural/format issues
+- Before `/wiki-review` `merge` mode, to surface fragmentation candidates
+
 ## Prerequisites
 
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
@@ -100,6 +106,13 @@ affected_pages: [<id1>, <id2>]
 ```
 
 Update `wiki/log.md` with lint operation record.
+
+## Gotchas
+
+- **Never modify wiki pages directly** — lint only writes reports into `lint_pending/`; fixes flow through review/ingest.
+- **Semantic judgment stays in `/wiki-review`** — lint flags only machine-checkable issues (size, knowledge map, detail pointers, index); self-containment and granularity are review's call.
+- **Report all issues, don't stop at the first error** — a full report beats a partial one.
+- Contradiction findings must include full context from both conflicting pages, not one side.
 
 ## Constraints
 

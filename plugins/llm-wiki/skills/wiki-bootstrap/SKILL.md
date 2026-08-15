@@ -8,6 +8,12 @@ argument-hint: "[--repo <path>] [--phases <A|AB|ABC>]"
 
 Initialize a new LLM Wiki from an existing GitHub repository.
 
+## When to Use This Skill
+
+- User asks to "bootstrap wiki", "initialize wiki from repo", or start a fresh knowledge base
+- First-time setup of an LLM Wiki from an existing GitHub repository
+- Rebuilding a wiki from scratch where only the source repo exists
+
 ## Prerequisites
 
 - Target repo must be accessible locally.
@@ -125,6 +131,14 @@ If bootstrap fails (< 2/3), suggest running Phase B (docs/) for more content.
       Startup Q&A: <score>/3
       Wiki is ready for queries. Try /wiki-query "what is this project?"
    ```
+
+## Gotchas
+
+- **Phase page targets are upper bounds, not quotas** — never over-split pages just to hit counts.
+- **Issues/PRs phases are opt-in only** — never scrape GitHub Issues or PRs without explicit user consent.
+- **Never bypass the batch confirmation** — all generated pages must be human-reviewed before finalizing.
+- **Decisions/rationale never become standalone pages** — they merge into related concept pages' content.
+- Minimum viable is **11 pages** — prefer depth and quality over padding to reach targets.
 
 ## Constraints
 

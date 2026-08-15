@@ -8,6 +8,11 @@ argument-hint: "[--dry-run]"
 
 Single-user direct sync: commit wiki changes and push to `origin/main`. No feature branches, no conflict machinery.
 
+## When to Use This Skill
+
+- User asks to "sync wiki", "push wiki changes", or commit the llm-wiki repo
+- After `/wiki-capture` / `/wiki-review` / `/wiki-ingest` produced local changes that should reach the remote
+
 ## Prerequisites
 
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH`.
@@ -56,6 +61,13 @@ Update `wiki/index.md` frontmatter `last_commit` to the new HEAD SHA, then commi
 ### Step 5: Log
 
 Append sync record to `wiki/log.md` (JSON Lines).
+
+## Gotchas
+
+- **Never push without explicit confirmation** — pushing is a high-impact action; default to no.
+- **Never physically delete wiki pages** — a `D` in git status means restore from HEAD and mark `status: stale`, never `git rm`.
+- **Use `--dry-run` first** — report changes before committing anything.
+- If no remote is configured, commit locally and skip push — do not fail the sync.
 
 ## Options
 

@@ -8,6 +8,12 @@ argument-hint: "[--scope <current-turn|full-session>]"
 
 Extract the current Chat session's knowledge as **one document per discussion topic** (the session may cover several topics, e.g. A and B, or just one, A) — no knowledge-unit cutting, no type classification, no page slugs. Present the topics for human selection, then write each selected topic as its own document for review. Knowledge-unit cutting, type classification, and page assignment happen at `/wiki-ingest`, which owns the global context (dedup, granularity, existing pages) that capture lacks.
 
+## When to Use This Skill
+
+- User asks to "capture this conversation", "save to wiki", or "extract knowledge" from a Copilot Chat session
+- After a significant technical discussion that produced reusable knowledge (patterns, mechanisms, named tools, trade-offs)
+- Before `/wiki-ingest`, when session knowledge needs to enter the human-gated review queue
+
 ## Prerequisites
 
 - Environment variable `$LLM_WIKI_PATH` must point to the llm-wiki repo.
@@ -144,6 +150,14 @@ Body — the topic's detailed narrative (one topic per document, no nested secti
 2. Append 1 full entry to `$LLM_WIKI_PATH/wiki/activity.md` (complete history).
 
 > 不再写 user memory（wiki-activity.md 已移除）——状态按需从 log.md / questions_pending/ 派生。
+
+## Gotchas
+
+- **Never cut topics into knowledge units or assign page slugs** — `topic-slug` is only a document identifier; page slugs and entity/concept classification belong to `/wiki-ingest`.
+- **Never write files before the human confirms the topic selection** — unselected topics must not reach `questions_pending/` (fail closed).
+- **Do not merge topics into one document** — each selected topic is its own `session-<date>-<topic-slug>.md`.
+- **Provenance is mandatory** — every topic must carry `来源：第 N 轮 …`; speculative claims get `[unverified]`; without provenance, `/wiki-review` cannot verify the claim.
+- If `$LLM_WIKI_PATH` is unset, fall back to `<workspace>/.wiki-capture/`; if the schema instruction is unavailable, follow the Step 7 frontmatter template.
 
 ## Constraints
 

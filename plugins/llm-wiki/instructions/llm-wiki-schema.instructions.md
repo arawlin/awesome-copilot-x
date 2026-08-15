@@ -1,6 +1,6 @@
 ---
-description: "LLM Wiki 页面格式规范 — 定义 frontmatter 字段、页面生命周期、WikiLink 语法。被所有 Wiki 操作 Skill 引用。"
-applyTo: "**/wiki/**/*.md"
+description: 'LLM Wiki 页面格式规范 — 定义 frontmatter 字段、页面生命周期、WikiLink 语法。被所有 Wiki 操作 Skill 引用。'
+applyTo: '**/wiki/**/*.md'
 ---
 
 # LLM Wiki 页面格式规范

@@ -1,6 +1,6 @@
 ---
-description: "跨会话 Wiki 上下文感知 — 通过 $LLM_WIKI_PATH 定位 Wiki，状态按需从事实源派生"
-applyTo: "**"
+description: '跨会话 Wiki 上下文感知 — 通过 $LLM_WIKI_PATH 定位 Wiki，状态按需从事实源派生'
+applyTo: '**'
 ---
 
 # Wiki 跨会话上下文

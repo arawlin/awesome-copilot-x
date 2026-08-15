@@ -8,6 +8,12 @@ argument-hint: "[all|batch|slug <id>]"
 
 Human-gated approval workflow for pending session capture documents (one document per topic). Each document IS a topic; review approves/rejects/revises it, then the finalized document moves `questions_pending/` → `questions_approved/` or `rejected/`.
 
+## When to Use This Skill
+
+- User asks to "review wiki changes", "approve pending", or "manage pending knowledge"
+- After `/wiki-capture` produced pending topic documents that need human-gated approval before `/wiki-ingest`
+- To approve synthesis drafts or audit legacy fragmented pages (`merge` mode)
+
 ## Prerequisites
 
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
@@ -159,6 +165,14 @@ Rejected topic documents move to `rejected/` with the `review` frontmatter reaso
 Retention days are defaults (uncalibrated) — override via `.wiki-config.yml` `rejected_retention_days`.
 
 Run `tools/cleanup-rejected.sh` periodically to purge expired rejected items.
+
+## Gotchas
+
+- **Never auto-approve low-confidence items** — they always require individual review.
+- **Never reject without a `reason`** — the review record is the audit trail for the whole pipeline.
+- **Never merge legacy pages without explicit user confirmation** — merging is destructive restructuring.
+- **Check freshness before approving** — if a referenced source changed since capture, warn and consider re-extraction.
+- Batch mode is for low-risk items only; contradictions always go to individual review.
 
 ## Constraints
 

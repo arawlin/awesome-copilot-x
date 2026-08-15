@@ -8,6 +8,12 @@ argument-hint: "<question>"
 
 Answer user questions by reading and synthesizing information from the LLM Wiki knowledge base.
 
+## When to Use This Skill
+
+- User asks a question that may be answered by wiki knowledge, wants to "search the wiki", or needs cross-referenced information
+- Before fetching external docs — the wiki answers "why/how" and points to raw sources for "what"
+- When the answer spans multiple pages and needs synthesis with [[WikiLink]] citations
+
 ## Prerequisites
 
 - The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
@@ -77,6 +83,14 @@ List all pages consulted at the end of the answer:
 - [[concepts/proof-of-stake]] — PoS concept page
 - [[sources/ethereum-whitepaper]] — Original whitepaper
 ```
+
+## Gotchas
+
+- **Never fabricate information** — if the wiki doesn't contain the answer, say so; never invent WikiLinks or citations.
+- **Follow detail pointers instead of guessing** — reference-level detail (parameters, exact fields) lives in the original source; use the source page's `Agent 指令` URL block.
+- **Surface contradictions explicitly** — when two pages conflict, state both sides instead of silently picking one.
+- **Stay within the selection budget** (10–15 pages / 1,500–12,000 tokens) — over-selection pollutes the context window.
+- For large wikis (index >~20K tokens or >~5,000 pages), run the bundled BM25 `search.py` instead of scanning the whole index.
 
 ## Performance Notes
 

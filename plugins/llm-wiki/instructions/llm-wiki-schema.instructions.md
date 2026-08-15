@@ -246,13 +246,13 @@ schema_version: "0.1"
 
 ## Session Capture（会话捕获文档）
 
-`/wiki-capture` 的产出物：每次捕获运行一份文档 `questions_pending/session-<date>-<slug>.md`（无 `$LLM_WIKI_PATH` 时回退 `<workspace>/.wiki-capture/`）。**捕获阶段不做类型拆分**——entity/concept 归类由 `/wiki-ingest` 决定。
+`/wiki-capture` 的产出物：每次捕获按讨论主题拆分——**每个主题一份文档** `questions_pending/session-<date>-<topic-slug>.md`（无 `$LLM_WIKI_PATH` 时回退 `<workspace>/.wiki-capture/`）。**捕获阶段不做切分、不做分类**——知识单元切分与 entity/concept 归类由 `/wiki-ingest` 决定。
 
 ```yaml
 ---
 type: session
-id: session-<YYYYMMDD>-<slug>
-title: "<会话主题>"
+id: session-<YYYYMMDD>-<topic-slug>
+title: "<主题标题>"
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DD>
 tags: []
@@ -263,24 +263,17 @@ related: []
 ---
 ```
 
-正文结构（每个候选项一个 `###` 小节）：
+正文：该主题的详细叙述（一份文档 = 一个主题，无嵌套小节）：
 
 ```markdown
-## 候选知识清单
+<该主题的详细叙述：关键事实、机制、取舍理由、具名事物、关系>
 
-### 1. <标题>（confidence: high）
-
-摘要：<一句话>
-
-关键要点：
-- <要点 1>
-- <要点 2>
-
-来源：<第几轮 / 哪条消息>
+来源：<第 N 轮 …>
 ```
 
-- **大小上限**：session 文档 ≤ 200 行 / 约 6KB；超出则压缩要点或拆多次捕获。
-- `review` 字段由 `/wiki-review` 填写（逐条目 approve/reject/revise）；被拒条目从正文移除并记录理由。
+- **大小上限**：每份主题文档 ≤ 200 行 / 约 6KB；超出则压缩叙述。
+- 主题文档名中的 `topic-slug` 是文档标识（非页面 slug）；页面 slug 由 `/wiki-ingest` 分配。
+- `review` 字段由 `/wiki-review` 填写（approved/rejected/revised）；被拒文档记录理由。
 
 ## 运行参数（.wiki-config.yml）
 

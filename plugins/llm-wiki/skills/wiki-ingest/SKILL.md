@@ -1,12 +1,12 @@
 ---
 name: wiki-ingest
-description: 'Ingest approved content into the LLM Wiki — read raw/ documents (knowledge map + entity/concept extraction) and approved session capture documents from questions_approved/ (type-splitting + dedup), producing self-contained wiki pages (sources/entities/concepts) with mandatory provenance and LLM-consumption quality rules (self-containment, size caps, progressive disclosure). Use when user asks to "ingest documents", "add to wiki", "process raw files", or build the knowledge base for AI agents.'
+description: 'Ingest approved content into the LLM Wiki — read raw/ documents (knowledge map + entity/concept extraction) and approved session capture documents from questions_approved/ (knowledge-unit segmentation + type-splitting + dedup), producing self-contained wiki pages (sources/entities/concepts) with mandatory provenance and LLM-consumption quality rules (self-containment, size caps, progressive disclosure). Use when user asks to "ingest documents", "add to wiki", "process raw files", or build the knowledge base for AI agents.'
 argument-hint: "[--source <file>] [--all]"
 ---
 
 # Wiki Ingest — 文档摄入
 
-Read documents from `raw/` and approved session capture documents from `questions_approved/`, then generate structured wiki pages under `wiki/sources/`, `wiki/entities/`, and `wiki/concepts/`. Session documents are type-split here (entity / concept) — capture deliberately does not classify, because type assignment needs the global dedup and granularity context this stage owns. The wiki is consumed by **LLM agents**, not human readers: agents retrieve pages on demand into a finite context window, so every page must be self-contained and every index must stay small and high-signal. Extracted pages are leaf nodes of a lightweight document knowledge map — never isolated fragments, never bloated megapages.
+Read documents from `raw/` and approved session capture documents from `questions_approved/`, then generate structured wiki pages under `wiki/sources/`, `wiki/entities/`, and `wiki/concepts/`. Session documents are segmented and type-split here (entity / concept) — capture deliberately does not classify or segment, because knowledge-unit cutting and type assignment need the global dedup and granularity context this stage owns. The wiki is consumed by **LLM agents**, not human readers: agents retrieve pages on demand into a finite context window, so every page must be self-contained and every index must stay small and high-signal. Extracted pages are leaf nodes of a lightweight document knowledge map — never isolated fragments, never bloated megapages.
 
 ## When to Use This Skill
 
@@ -146,18 +146,19 @@ Examples:
 
 ## Session Capture Ingestion（会话文档摄入）
 
-Second input source, after raw documents: `questions_approved/session-*.md` (one document per capture run, format per schema「Session Capture」节). This stage owns the type-splitting that capture deliberately skipped.
+Second input source, after raw documents: `questions_approved/session-*.md` (one document per topic, format per schema「Session Capture」节). This stage owns the **segmentation and type-splitting** that capture deliberately skipped.
 
-For each session document:
+For each session topic document:
 
-1. **Type-split each item**:
+1. **Segment the topic into knowledge units** — each document is one discussion topic, not a page. Decide which knowledge units it contains: named things (entities), patterns/methodologies/principles (concepts), sub-flows (fold into parent), and data (skip). The standalone-retrieval-value judgment happens HERE, where the existing wiki is known.
+2. **Type-split each unit**:
    - **Entity** (named, identifiable thing) → `wiki/entities/<slug>.md` (relaxed standard, Step 3).
    - **Concept** (pattern/methodology) → `wiki/concepts/<slug>.md` only if the three-condition granularity gate passes; sub-flows fold into the parent page as a `## section` (`#锚点`).
-   - Rationale content ("we chose X over Y because Z") is part of a concept's 核心思想 — it arrives as a concept candidate, never a separate class.
-2. **Dedup check** per item — same three-band table as Step 5 (AUTO-UPDATE / MERGE / SUGGEST-MERGE / CREATE).
-3. **Security filter** per Step 6.
-4. **Provenance**: every claim in the final page must carry the session document id (`captured_from`) — keep the trail from session → page.
-5. Update `wiki/index.md` and `wiki/log.md` (Step 7).
+   - Rationale content ("we chose X over Y because Z") is part of a concept's 核心思想 — never a separate class.
+3. **Dedup check** per unit — same three-band table as Step 5 (AUTO-UPDATE / MERGE / SUGGEST-MERGE / CREATE).
+4. **Security filter** per Step 6.
+5. **Provenance**: every claim in the final page must carry the session document id (`captured_from`) — keep the trail from session → topic → page.
+6. Update `wiki/index.md` and `wiki/log.md` (Step 7).
 
 ### Page Limits
 

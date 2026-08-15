@@ -1,148 +1,148 @@
 ---
 name: wiki-bootstrap
-description: 'Bootstrap a new LLM Wiki from a GitHub repository — extract knowledge from README, docs/, issues, and PRs using 4-level priority extraction. Target: 3 startup questions answerable, minimum 11 pages. Use when user asks to "bootstrap wiki", "initialize wiki from repo", or start a fresh knowledge base.'
+description: '从 GitHub 仓库冷启动构建新的 LLM Wiki——用 4 级优先级提取从 README、docs/、issues 与 PRs 中提取知识。目标：3 个启动问题可答、最少 11 页。当用户要求 "bootstrap wiki"、"initialize wiki from repo"，或启动全新知识库时使用。'
 argument-hint: "[--repo <path>] [--phases <A|AB|ABC>]"
 ---
 
 # Wiki Bootstrap — 冷启动引导
 
-Initialize a new LLM Wiki from an existing GitHub repository.
+从现有 GitHub 仓库初始化一个新的 LLM Wiki。
 
-## When to Use This Skill
+## 何时使用本技能
 
-- User asks to "bootstrap wiki", "initialize wiki from repo", or start a fresh knowledge base
-- First-time setup of an LLM Wiki from an existing GitHub repository
-- Rebuilding a wiki from scratch where only the source repo exists
+- 用户要求 "bootstrap wiki"、"initialize wiki from repo"，或启动全新知识库
+- 从现有 GitHub 仓库首次搭建 LLM Wiki
+- 只存在源仓库、需要从零重建 wiki 时
 
-## Prerequisites
+## 前置条件
 
-- Target repo must be accessible locally.
-- The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
-- Read the instruction file `llm-wiki-schema.instructions.md` for page format.
+- 目标仓库必须本地可访问。
+- 通过环境变量 `$LLM_WIKI_PATH` 可访问 llm-wiki 仓库。
+- 阅读指令文件 `llm-wiki-schema.instructions.md` 了解页面格式。
 
-## Extraction Phases (4-level priority)
+## 提取阶段（4 级优先级）
 
-### Phase A: Overview Seed (P0 — required)
+### 阶段 A：概览种子（P0 — 必做）
 
-**Sources**: `README.md`
+**来源**：`README.md`
 
-Extract:
-- **1 source page**: README summary.
-- **3–6 entity pages**: Core tools, frameworks, services mentioned.
-- **3–6 concept pages**: Key patterns, architecture concepts.
+提取：
+- **1 个 source 页**：README 摘要。
+- **3–6 个 entity 页**：提及的核心工具、框架、服务。
+- **3–6 个 concept 页**：关键模式、架构概念。
 
-**Target**: 7–13 pages. This is the minimum viable wiki.
+**目标**：7–13 页。这是最小可用 wiki。
 
-### Phase B: Constraint Seed (P1 — recommended)
+### 阶段 B：约束种子（P1 — 推荐）
 
-**Sources**: `docs/` directory (all `.md` files)
+**来源**：`docs/` 目录（所有 `.md` 文件）
 
-Extract additional entities and concepts from documentation. Merge/update Phase A pages.
+从文档中提取额外的实体与概念。合并/更新阶段 A 的页面。
 
-**Target**: Additional 5–15 pages.
+**目标**：额外 5–15 页。
 
-### Phase C: Community Seed (P2 — optional, opt-in)
+### 阶段 C：社区种子（P2 — 可选，opt-in）
 
-**Sources**: High-engagement Issues (👍 ≥ 5)
+**来源**：高参与度 Issues（👍 ≥ 5）
 
-Extract pain points, feature requests, and workarounds as concepts.
+将痛点、功能请求与变通方案提取为概念。
 
-**Target**: Additional 3–8 pages.
+**目标**：额外 3–8 页。
 
-### Phase D: Decision Seed (P3 — optional, opt-in)
+### 阶段 D：决策种子（P3 — 可选，opt-in）
 
-**Sources**: Merged PRs (title + description)
+**来源**：已合并的 PR（标题 + 描述）
 
-Extract architectural decisions and rationale as part of the related concept pages' content (never standalone pages).
+提取架构决策与理由，作为相关 concept 页内容的一部分（绝不单独成页）。
 
-**Target**: Additional 2–5 pages.
+**目标**：额外 2–5 页。
 
-## Workflow
+## 工作流
 
-### Step 1: Scan the target repository
+### Step 1: 扫描目标仓库
 
-Read the repo structure. Present a summary:
-
-```
-📊 Repository Analysis:
-   Language: <detected>
-   README: <size>
-   Docs: <n> files in docs/
-   Issues: <n> open, <n> high-engagement
-   Merged PRs: <n> recent
-
-Estimated bootstrap: Phase A = 7–13 pages, Phase AB = 12–28 pages
-Proceed with [A|AB|ABC|full]?
-```
-
-### Step 2: Execute extraction (phase by phase)
-
-For each phase, use the same extraction logic as `/wiki-ingest`, **including its granularity and quality conventions**:
-1. Read source documents.
-2. Build a document knowledge map (small, high-signal; see `/wiki-ingest` Step 2).
-3. Extract entities, concepts, decisions — apply the granularity rules: concepts only with standalone retrieval value + self-contained + knowledge-not-data; sub-flows merge into parent pages (`#锚点`); decisions/rationale merge into the related concept pages' content (never standalone pages).
-4. Generate wiki pages with provenance, respecting page quality hard standards (self-contained, ≤ ~300 lines / ~4KB, trailing detail pointer).
-5. Self-validate (confidence levels).
-6. Security filter.
-
-Phase A page targets (3–6 entity + 3–6 concept) are upper bounds, not quotas — do not over-split to hit them.
-
-### Step 3: Batch confirmation
-
-After extraction, present ALL generated pages as a batch (not one by one):
+读取仓库结构。展示摘要：
 
 ```
-📦 Bootstrap Complete: <N> pages generated
-   Sources: <n>
-   Entities: <n>
-   Concepts: <n>
+📊 仓库分析：
+   语言：<detected>
+   README：<size>
+   Docs：docs/ 中 <n> 个文件
+   Issues：<n> 个打开，<n> 个高参与度
+   已合并 PRs：<n> 个最近
 
-Page list:
+预计引导规模：Phase A = 7–13 页，Phase AB = 12–28 页
+继续 [A|AB|ABC|full]？
+```
+
+### Step 2: 执行提取（逐阶段）
+
+对每个阶段，使用与 `/wiki-ingest` 相同的提取逻辑，**包括其粒度与质量约定**：
+1. 阅读来源文档。
+2. 构建文档知识地图（小而高信号；见 `/wiki-ingest` Step 2）。
+3. 提取实体、概念、决策——应用粒度规则：概念须满足有独立检索价值 + 自包含 + 是知识非数据；子流程并入父页（`#锚点`）；决策/理由并入相关 concept 页内容（绝不单独成页）。
+4. 生成带溯源的 wiki 页面，遵守页面质量硬标准（自包含、≤ 约 300 行 / 约 4KB、结尾细节指针）。
+5. 自校验（置信度级别）。
+6. 安全过滤。
+
+阶段 A 的页面目标（3–6 entity + 3–6 concept）是上限而非配额——不要为了凑数过度拆分。
+
+### Step 3: 批量确认
+
+提取后，把全部生成的页面作为一批展示（而非逐个）：
+
+```
+📦 引导完成：生成 <N> 页
+   Sources：<n>
+   Entities：<n>
+   Concepts：<n>
+
+页面列表：
    [[entities/foo]] — Foo
    [[concepts/bar]] — Bar
    ...
 
-Review and approve all? [y/n/edit]
+审核并批准全部？[y/n/edit]
 ```
 
-This compresses the human-gated loop into a single batch confirmation.
+这把人工把关循环压缩为单次批量确认。
 
-### Step 4: Startup validation
+### Step 4: 启动验证
 
-After approval, run 3 pre-defined startup questions:
+批准后，运行 3 个预定义启动问题：
 
-1. "What is this project?" — Should return project overview from source page.
-2. "What are the core concepts?" — Should list concepts from concept pages.
-3. "How do I get started?" — Should return setup/quickstart from README source.
+1. "这个项目是什么？" — 应从 source 页返回项目概览。
+2. "核心概念有哪些？" — 应从 concept 页列出概念。
+3. "如何开始？" — 应从 README source 返回设置/快速上手。
 
-Scoring: ≥ 2/3 correct = bootstrap successful.
+评分：≥ 2/3 正确 = 引导成功。
 
-If bootstrap fails (< 2/3), suggest running Phase B (docs/) for more content.
+若引导失败（< 2/3），建议运行阶段 B（docs/）补充内容。
 
-### Step 5: Finalize
+### Step 5: 收尾
 
-1. Update `wiki/index.md` with all new pages.
-2. Append bootstrap record to `wiki/log.md`.
-3. Append 1 full entry to `wiki/activity.md`.
-4. Report:
+1. 用所有新页面更新 `wiki/index.md`。
+2. 向 `wiki/log.md` 追加引导记录。
+3. 向 `wiki/activity.md` 追加 1 条完整记录。
+4. 汇报：
    ```
-   ✅ Bootstrap successful!
-      Pages: <N>
-      Startup Q&A: <score>/3
-      Wiki is ready for queries. Try /wiki-query "what is this project?"
+   ✅ 引导成功！
+      页面：<N>
+      启动问答：<score>/3
+      Wiki 已可查询。试试 /wiki-query "what is this project?"
    ```
 
-## Gotchas
+## 注意事项（Gotchas）
 
-- **Phase page targets are upper bounds, not quotas** — never over-split pages just to hit counts.
-- **Issues/PRs phases are opt-in only** — never scrape GitHub Issues or PRs without explicit user consent.
-- **Never bypass the batch confirmation** — all generated pages must be human-reviewed before finalizing.
-- **Decisions/rationale never become standalone pages** — they merge into related concept pages' content.
-- Minimum viable is **11 pages** — prefer depth and quality over padding to reach targets.
+- **阶段页面目标是上限而非配额**——绝不为了凑数过度拆分页面。
+- **Issues/PRs 阶段仅 opt-in**——未经用户明确同意绝不抓取 GitHub Issues 或 PRs。
+- **绝不绕过批量确认**——所有生成页面必须在收尾前经人工审核。
+- **决策/理由绝不单独成页**——并入相关 concept 页内容。
+- 最小可用是 **11 页**——优先深度与质量，而非凑数达标。
 
-## Constraints
+## 约束
 
-- Maximum total pages: **50 per bootstrap session** (default; override via `.wiki-config.yml` `bootstrap_max_pages`).
-- Minimum viable: **11 pages** (1 source + 5 entity + 5 concept).
-- Issues/PRs phases are **opt-in only** — never scrape without user consent.
-- Human-gated: batch confirmation required before finalizing.
+- 单次引导会话最多总页数 **50 页**（默认；可通过 `.wiki-config.yml` 的 `bootstrap_max_pages` 覆盖）。
+- 最小可用：**11 页**（1 source + 5 entity + 5 concept）。
+- Issues/PRs 阶段**仅 opt-in**——未经同意绝不抓取。
+- 人工把关：收尾前必须批量确认。

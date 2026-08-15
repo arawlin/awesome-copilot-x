@@ -1,122 +1,122 @@
 ---
 name: wiki-review
-description: 'Review pending session capture documents — approve, reject, or revise topic documents in questions_pending/ (each session-*.md is one discussion topic) via three-state review, with quality gates (self-containment, size, granularity), synthesis draft approval, and a legacy merge mode for pages violating current granularity rules. Use when user asks to "review wiki changes", "approve pending", or manage the human-gated knowledge workflow.'
+description: '人工审核待处理的会话捕获文档——对 questions_pending/ 中的主题文档（每份 session-*.md 是一个讨论主题）做 approve/reject/revise 三态裁决，含质量门（自包含、大小、粒度）、synthesis 草稿批准与存量碎片页合并模式。当用户要求 "review wiki changes"、"approve pending"，或管理人工把关的知识工作流时使用。'
 argument-hint: "[all|batch|slug <id>]"
 ---
 
 # Wiki Review — 人工审核
 
-Human-gated approval workflow for pending session capture documents (one document per topic). Each document IS a topic; review approves/rejects/revises it, then the finalized document moves `questions_pending/` → `questions_approved/` or `rejected/`.
+对待处理会话捕获文档的人工把关工作流（每主题一份文档）。每份文档就是一个主题；审核对其批准/拒绝/修订，定稿后文档从 `questions_pending/` 移动到 `questions_approved/` 或 `rejected/`。
 
-## When to Use This Skill
+## 何时使用本技能
 
-- User asks to "review wiki changes", "approve pending", or "manage pending knowledge"
-- After `/wiki-capture` produced pending topic documents that need human-gated approval before `/wiki-ingest`
-- To approve synthesis drafts or audit legacy fragmented pages (`merge` mode)
+- 用户要求 "review wiki changes"、"approve pending" 或 "manage pending knowledge"
+- 在 `/wiki-capture` 产生待审核的主题文档之后、`/wiki-ingest` 之前（需要人工把关）
+- 批准 synthesis 草稿，或审计存量碎片页（`merge` 模式）
 
-## Prerequisites
+## 前置条件
 
-- The `llm-wiki` repo must be accessible via `$LLM_WIKI_PATH` environment variable.
-- Read the instruction file `llm-wiki-schema.instructions.md` for review frontmatter fields.
-- Read `wiki/.wiki-config.yml` for session limits and retention thresholds (defaults apply when absent).
+- 通过环境变量 `$LLM_WIKI_PATH` 可访问 llm-wiki 仓库。
+- 阅读指令文件 `llm-wiki-schema.instructions.md` 了解审核 frontmatter 字段。
+- 阅读 `wiki/.wiki-config.yml` 了解会话上限与保留阈值（缺失时用默认值）。
 
-## Review Modes
+## 审核模式
 
-| Mode | Command | Description |
+| 模式 | 命令 | 说明 |
 |------|---------|-------------|
-| **All** | `all` | Review every pending topic document one by one |
-| **Batch** | `batch` | Quick-approve all low-risk topic documents at once |
-| **Single** | `slug <id>` | Review one specific pending document |
-| **Legacy merge** | `merge` | Audit existing pages against current granularity rules and propose merges (e.g., over-split sub-concepts) |
+| **全部** | `all` | 逐个审核每份待处理主题文档 |
+| **批量** | `batch` | 一次性快速批准所有低风险主题文档 |
+| **单个** | `slug <id>` | 审核某一份特定文档 |
+| **存量合并** | `merge` | 按当前粒度规则审计已有页面并提议合并（如过度拆分的子概念） |
 
-## Review States
+## 审核状态
 
-| State | Action | File operation |
+| 状态 | 动作 | 文件操作 |
 |-------|--------|---------------|
-| **approved** | Topic accepted as-is | `mv questions_pending/<id>.md questions_approved/<id>.md` |
-| **rejected** | Topic declined with reason | `mv questions_pending/<id>.md rejected/<id>.md` + add `review` frontmatter |
-| **revised** | Topic approved with edits | Modify in Chat, confirm, then move to `questions_approved/` |
+| **approved** | 主题原样接受 | `mv questions_pending/<id>.md questions_approved/<id>.md` |
+| **rejected** | 带理由拒绝主题 | `mv questions_pending/<id>.md rejected/<id>.md` + 添加 `review` frontmatter |
+| **revised** | 修订后批准主题 | 在 Chat 中修改并确认后，移至 `questions_approved/` |
 
-Each document is one topic, so review decisions are per-document; the `review` frontmatter records the outcome on the single document.
+每份文档是一个主题，因此审核决策按文档进行；`review` frontmatter 在单份文档上记录结果。
 
-## Quality Gate (every reviewed item)
+## 质量门（每份被审文档）
 
-Before approving, verify each item against the LLM-consumption quality rules (schema):
+批准前，对照 LLM 消费质量规则（schema）逐项核验：
 
-| Check | Pass criteria |
+| 检查 | 通过标准 |
 |-------|---------------|
-| **Self-contained** | The topic document reads coherently on its own — no sibling documents required |
-| **Size cap** | Session document ≤ 200 lines / ~6KB（schema, Session Capture 节） |
-| **Granularity** | Topic is a coherent discussion section, NOT a pre-cut knowledge unit — unit cutting and classification are ingest's job |
-| **Provenance** | Every topic carries its session turn/message source |
+| **自包含** | 主题文档单独阅读即可连贯理解——无需兄弟文档 |
+| **大小上限** | session 文档 ≤ 200 行 / 约 6KB（schema, Session Capture 节） |
+| **粒度** | 主题是连贯的讨论小节，而非预切的知识单元——单元切分与分类是 ingest 的职责 |
+| **溯源** | 每个主题携带其会话轮次/消息来源 |
 
-Items failing any check go to `revised` (edit before approve) or `rejected` (with reason) — never auto-approved.
+任何一项不通过的条目进入 `revised`（先修订再批准）或 `rejected`（带理由）——绝不自动批准。
 
-## Synthesis Draft Approval
+## Synthesis 草稿批准
 
-`wiki/synthesis/` drafts (created by `/wiki-ingest` with `status: draft`) require approval here:
+`wiki/synthesis/` 的草稿（由 `/wiki-ingest` 创建，`status: draft`）需要在此批准：
 
-1. Read the draft page.
-2. Verify it answers a **cross-document** question (spans multiple source pages) — not a single-document restatement (that belongs in the knowledge map).
-3. Verify claims carry provenance.
-4. On approval, set frontmatter: `status: active`, `approved_by: "<user>"`, `approved_at: <YYYY-MM-DD>`. Move any `questions_pending/synthesis-*.md` to `questions_approved/`.
-5. Log the approval in `wiki/log.md` and `wiki/activity.md`.
+1. 阅读草稿页面。
+2. 核验它回答的是**跨文档**问题（横跨多个 source 页面）——而非单文档复述（那属于知识地图）。
+3. 核验论点携带溯源。
+4. 批准时设置 frontmatter：`status: active`、`approved_by: "<user>"`、`approved_at: <YYYY-MM-DD>`。将任何 `questions_pending/synthesis-*.md` 移至 `questions_approved/`。
+5. 在 `wiki/log.md` 和 `wiki/activity.md` 记录批准。
 
-## Workflow
+## 工作流
 
-### Step 1: Load pending queue
+### Step 1: 加载待审队列
 
-List all files in `$LLM_WIKI_PATH/questions_pending/` (one `session-*.md` document per topic). For each document, read its topic content and confidence level, then categorize:
-- **High confidence** + **low risk**: Eligible for batch approval.
-- **Medium confidence** + **medium risk**: Standard review.
-- **Low confidence** + **high risk**: Deep review required.
+列出 `$LLM_WIKI_PATH/questions_pending/` 中所有文件（每主题一份 `session-*.md`）。对每份文档读取其主题内容与置信度，然后归类：
+- **高置信度** + **低风险**：可批量批准。
+- **中置信度** + **中风险**：标准审核。
+- **低置信度** + **高风险**：需要深度审核。
 
-### Step 2: Triage
+### Step 2: 分诊
 
-Present a summary before detailed review:
+详细审核前先给出摘要：
 
 ```
-📋 Pending Review: <N> items
-   🟢 Low risk (batch-eligible): <n>
-   🟡 Medium risk: <n>
-   🔴 High risk (deep review): <n>
+📋 待审核：<N> 份文档
+   🟢 低风险（可批量）：<n>
+   🟡 中风险：<n>
+   🔴 高风险（深度审核）：<n>
 
-Proceed with [all|batch|skip]?
+继续 [all|batch|skip]？
 ```
 
-### Step 3: Review each topic document
+### Step 3: 逐份审核主题文档
 
-For each pending topic document, present:
+对每份待处理主题文档，展示：
 
-1. **Title**.
-2. **Confidence** level.
-3. **Key claims** (first 3–5 bullet points).
-4. **Provenance** summary.
-5. **Decision prompt**: `[a]pprove / [r]eject / [e]dit / [s]kip`
+1. **标题**。
+2. **置信度**级别。
+3. **关键论点**（前 3–5 条）。
+4. **溯源**摘要。
+5. **裁决提示**：`[a]pprove / [r]eject / [e]dit / [s]kip`
 
-#### Batch mode
+#### 批量模式
 
-For low-risk topic documents only, present a summary table:
+仅对低风险主题文档，展示摘要表：
 
-| # | Title | Confidence |
+| # | 标题 | 置信度 |
 |---|-------|------------|
 | 1 | Foo | high |
 | 2 | Bar | high |
 
-Single confirmation: "Approve all <n> topic documents? [y/n]"
+单次确认："批准全部 <n> 份主题文档？[y/n]"
 
-#### Approve-with-Edit
+#### 修订后批准
 
-When user requests edits:
-1. User provides edit instruction (e.g., "change date to 2022").
-2. Apply the edit to the pending document.
-3. Show the diff.
-4. Confirm: "Apply this change? [y/n]"
-5. If yes, move to `questions_approved/`. Record edit in `review.changes_requested`.
+当用户要求修订时：
+1. 用户给出修订指令（如 "把日期改为 2022"）。
+2. 对待处理文档应用修订。
+3. 展示 diff。
+4. 确认："应用此修改？[y/n]"
+5. 是则移至 `questions_approved/`。在 `review.changes_requested` 记录修订。
 
-### Step 4: Record review decisions
+### Step 4: 记录审核决策
 
-Record the decision in the document's frontmatter (each document is one topic):
+在文档 frontmatter 中记录决策（每份文档是一个主题）：
 
 ```yaml
 review:
@@ -127,55 +127,55 @@ review:
   changes_requested: "<edit summary>"
 ```
 
-### Step 5: Freshness check during review
+### Step 5: 审核期间的新鲜度检查
 
-Before approving, check if any referenced source pages have been updated since the pending item was generated:
-- Compare `source_last_commit` or `source_hash` of referenced pages.
-- If a source has changed, warn: "⚠️ Source [[sources/xxx]] has been updated since this item was captured. Consider re-extracting."
+批准前，检查被引用的 source 页面自该条目生成后是否已更新：
+- 比较引用页面的 `source_last_commit` 或 `source_hash`。
+- 若来源已变化，警告："⚠️ 来源 [[sources/xxx]] 自本条目捕获后已更新，考虑重新提取。"
 
-### Step 6: Update logs
+### Step 6: 更新日志
 
-1. Append review operation record to `$LLM_WIKI_PATH/wiki/log.md` (JSON Lines).
-2. Append 1 full entry to `$LLM_WIKI_PATH/wiki/activity.md` (complete history).
+1. 向 `$LLM_WIKI_PATH/wiki/log.md` 追加审核操作记录（JSON Lines）。
+2. 向 `$LLM_WIKI_PATH/wiki/activity.md` 追加 1 条完整记录（完整历史）。
 
 > 不再写 user memory（wiki-activity.md 已移除）——状态按需从 log.md / questions_pending/ 派生。
 
-## Legacy Merge Mode
+## 存量合并模式
 
-Audit existing pages that violate current granularity rules (e.g., over-split sub-concepts like `binance-api-authentication` + `binance-request-signing-payload`):
+审计违反当前粒度规则的已有页面（如过度拆分的子概念 `binance-api-authentication` + `binance-request-signing-payload`）：
 
-1. **Scan** `wiki/entities/` and `wiki/concepts/` for candidate groups: pages with heavy `related` overlap, sub-flow pages never queried alone, or pages exceeding the size cap.
-2. **Propose merges** as a table: target page (parent) + candidate pages + merge rationale + how provenance is preserved (keep both `sources` lists).
-3. Present for user confirmation: `[y/n/edit]`.
-4. On approval, merge content into the parent page (sub-flows become `## sections`), **delete the absorbed pages outright (no redirects)**, then fix any broken `[[WikiLink]]` references to the removed pages, update `related`, `wiki/index.md`, `wiki/log.md`, and re-run lint.
+1. **扫描** `wiki/entities/` 和 `wiki/concepts/` 中的候选组：`related` 高度重叠、从不单独查询的子流程页、或超过大小上限的页面。
+2. **提议合并**为表格：目标页（父页）+ 候选页 + 合并理由 + 溯源如何保留（保留两条 `sources` 列表）。
+3. 提交用户确认：`[y/n/edit]`。
+4. 批准后把内容合并进父页（子流程变成 `## sections`），**彻底删除被吸收的页面（无重定向）**，修复对被删页面的所有失效 `[[WikiLink]]` 引用，更新 `related`、`wiki/index.md`、`wiki/log.md`，并重新运行 lint。
 
-> Never merge without user confirmation — this is a destructive restructuring.
+> 未经用户确认绝不合并——这是破坏性重构。
 
-## Rejected Item Retention
+## 被拒条目保留
 
-Rejected topic documents move to `rejected/` with the `review` frontmatter reason recorded; approved documents move to `questions_approved/` as-is.
+被拒的主题文档移动到 `rejected/` 并记录 `review` frontmatter 理由；批准的文档原样移动到 `questions_approved/`。
 
-| Reason | Retention | Archive path |
-|--------|-----------|-------------|
-| Duplicate | 1 day | `rejected/YYYY-MM/<id>.md` |
-| Low quality | 7 days | `rejected/YYYY-MM/<id>.md` |
-| Outdated | 30 days | `rejected/YYYY-MM/<id>.md` |
-| Contradiction | Permanent | `rejected/permanent/<id>.md` |
+| 理由 | 保留期 | 归档路径 |
+|--------|-----------|--------------|
+| 重复 | 1 天 | `rejected/YYYY-MM/<id>.md` |
+| 质量低 | 7 天 | `rejected/YYYY-MM/<id>.md` |
+| 过时 | 30 天 | `rejected/YYYY-MM/<id>.md` |
+| 矛盾 | 永久 | `rejected/permanent/<id>.md` |
 
-Retention days are defaults (uncalibrated) — override via `.wiki-config.yml` `rejected_retention_days`.
+保留天数默认未校准——可通过 `.wiki-config.yml` 的 `rejected_retention_days` 覆盖。
 
-Run `tools/cleanup-rejected.sh` periodically to purge expired rejected items.
+定期运行 `tools/cleanup-rejected.sh` 清理过期的被拒条目。
 
-## Gotchas
+## 注意事项（Gotchas）
 
-- **Never auto-approve low-confidence items** — they always require individual review.
-- **Never reject without a `reason`** — the review record is the audit trail for the whole pipeline.
-- **Never merge legacy pages without explicit user confirmation** — merging is destructive restructuring.
-- **Check freshness before approving** — if a referenced source changed since capture, warn and consider re-extraction.
-- Batch mode is for low-risk items only; contradictions always go to individual review.
+- **绝不自动批准低置信度条目**——它们必须逐份单独审核。
+- **拒绝时必带 `reason`**——审核记录是整条流水线的审计线索。
+- **未经用户确认绝不合并存量页面**——合并是破坏性重构。
+- **批准前检查新鲜度**——若引用的来源自捕获后已变化，警告并考虑重新提取。
+- 批量模式仅适用于低风险条目；矛盾始终走单独审核。
 
-## Constraints
+## 约束
 
-- Maximum **20 topic documents** per review session (default; override via `.wiki-config.yml` `review_max_items_per_session`) to avoid overwhelming the user.
-- Rejected topic documents must always include a `reason` in the review record.
-- Never auto-approve low-confidence topic documents — they always require individual review.
+- 每次审核会话最多 **20 份主题文档**（默认；可通过 `.wiki-config.yml` 的 `review_max_items_per_session` 覆盖），避免淹没用户。
+- 被拒的主题文档必须始终在审核记录中带 `reason`。
+- 低置信度主题文档绝不自动批准——始终需要单独审核。
